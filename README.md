@@ -66,7 +66,7 @@ The goal of this project is to develop a machine learning model that accurately 
 ## Contributors
 ### The Data Vintners
 - [Bemnet Assefa](https://github.com/Beemnet)
-- Zeineb Rania Labidi
+- [Zeineb Rania Labidi](https://github.com/ZeinebRania)
 - [Riwa Masaad](https://github.com/Masaad-Riwa)
 - [Aichen Sun](https://github.com/as5419)
 - [Chorten Tsomo Tamang](https://github.com/Chorten-Tsomo)
