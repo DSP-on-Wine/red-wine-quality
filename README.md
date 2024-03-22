@@ -41,7 +41,7 @@ The goal of this project is to develop a machine learning model that accurately 
    - Select and tune machine learning algorithms.
    - Evaluate tuned models.
 
-5. **Integration with FastAPI**
+5. **Integration with FastAPI** [COMPLETE]
 
    - Implement API endpoints for model prediction.
    - Test API locally.
