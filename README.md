@@ -43,7 +43,8 @@ The goal of this project is to develop a machine learning model that accurately 
 
 5. **Integration with FastAPI**
 
-   - Implement API endpoints for model prediction.
+   - Implement API endpoints for model prediction. [COMPLETE]
+   - Implement API to get past predictions.
    - Test API locally.
 
 6. **Streamlit Dashboard Development**
