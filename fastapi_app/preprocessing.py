@@ -4,7 +4,6 @@ from .models import InputData
 
 
 def preprocess_data(data: InputData, scaler) -> np.ndarray:
-    # Create a dictionary with attribute names as keys and their values
     data_dict = {
         "fixed acidity": data.fixed_acidity,
         "volatile acidity": data.volatile_acidity,
@@ -18,11 +17,6 @@ def preprocess_data(data: InputData, scaler) -> np.ndarray:
         "sulphates": data.sulphates,
         "alcohol": data.alcohol
     }
-
-    # Convert dictionary to DataFrame
     data_df = pd.DataFrame(data_dict, index=[0])
-
-    # Scale the data using the scaler
     scaled_data = scaler.transform(data_df)
-
     return scaled_data
