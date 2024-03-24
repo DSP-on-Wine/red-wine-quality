@@ -41,7 +41,7 @@ The goal of this project is to develop a machine learning model that accurately 
    - Select and tune machine learning algorithms.
    - Evaluate tuned models.
 
-5. **Integration with FastAPI** [COMPLETE]
+5. **Integration with FastAPI**
 
    - Implement API endpoints for model prediction. [COMPLETE]
    - Implement API to get past predictions.
@@ -49,7 +49,8 @@ The goal of this project is to develop a machine learning model that accurately 
 
 6. **Streamlit Dashboard Development**
 
-   - Create a dashboard for data visualization and model predictions.
+   - Create a dashboard for data visualization and model predictions. [COMPLETE]
+   - Create a dashboard for viewing past predictions
    - Include interactive components.
 
 7. **PostgreSQL Database Integration**
@@ -73,7 +74,6 @@ The goal of this project is to develop a machine learning model that accurately 
     - Deploy the application in a production-like environment.
     - Monitor application performance.
 
-
 ## Installation
 
 Follow these steps to set up and install the project:
@@ -81,14 +81,12 @@ Follow these steps to set up and install the project:
 1. **Clone the repository:** https://github.com/DSP-on-Wine/red-wine-quality.git
 
 2. **Navigate to the project directory:** `cd red-wine-quality`
-   
 
 ### Install Dependencies
 
 1. Make sure you have Python and pip installed on your system.
 
 2. Install the required dependencies using pip: `pip install -r requirements.txt`
-
 
 ## Testing the API with Sample Data
 
@@ -99,15 +97,16 @@ Follow these steps to test the API using the notebook:
 1. **Run the Server:**
 
    Before testing the API, ensure that your FastAPI server is running locally. If you haven't started the server yet, follow these steps:
-   
+
    - Open a terminal or command prompt.
    - Navigate to the directory containing your FastAPI application script (e.g., `main.py`).
    - Run the following command to start the FastAPI server:
-   
+
      ```bash
      uvicorn fastapi_app.main:app --reload
      ```
-   This command starts the FastAPI server with automatic reloading enabled, allowing you to make changes to the code and see the effects without restarting the server manually.
+
+     This command starts the FastAPI server with automatic reloading enabled, allowing you to make changes to the code and see the effects without restarting the server manually.
 
 2. **Open the Jupyter Notebook:**
 
@@ -131,9 +130,17 @@ Follow these steps to test the API using the notebook:
 
 By following these steps, you can effectively test the FastAPI API with sample data using the provided notebook.
 
+## Running the Streamlit App
 
+Once the dependencies are installed, you can run the Streamlit app using the following command:
 
+```bash
+streamlit run streamlit_app/main.py
+```
 
+This will start the Streamlit server, and you can access the app in your web browser at http://localhost:8501.
+
+You should now be able to view the dataset used for training the model, and input details of new wine to get predictions.
 
 ## Contributors
 
