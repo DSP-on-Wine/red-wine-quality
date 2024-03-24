@@ -1,64 +1,35 @@
-# main.py
+import pandas as pd
 import streamlit as st
 from models import InputData
 from predictor import predict
 from data_loader import load_data
+from sidebar import add_sidebar
+from batch_predict import batch_predict
 
 
 def main():
     st.title('Red Wine Quality Predictor')
+    # File uploader for CSV file
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.subheader('Uploaded Data')
+        st.write(df)
+
+        if st.button('Predict for batch'):
+            predictions = batch_predict(df)
+            st.subheader('Predictions')
+            st.write(predictions)
 
     data = load_data()
 
-    st.subheader('Dataset')
+    st.subheader('Dataset used for training')
     st.dataframe(data)
 
-    st.sidebar.header('User Input Features')
-
-    fixed_acidity = st.sidebar.slider('Fixed Acidity',
-                                      min_value=0.0,
-                                      max_value=15.0,
-                                      value=7.0)
-    volatile_acidity = st.sidebar.slider('Volatile Acidity',
-                                         min_value=0.0,
-                                         max_value=2.0,
-                                         value=0.5)
-    citric_acid = st.sidebar.slider('Citric Acid',
-                                    min_value=0.0,
-                                    max_value=1.0,
-                                    value=0.0)
-    residual_sugar = st.sidebar.slider('Residual Sugar',
-                                       min_value=0.0,
-                                       max_value=15.0,
-                                       value=2.0)
-    chlorides = st.sidebar.slider('Chlorides',
-                                  min_value=0.0,
-                                  max_value=1.0,
-                                  value=0.08)
-    free_sulfur_dioxide = st.sidebar.slider('Free Sulfur Dioxide',
-                                            min_value=0.0,
-                                            max_value=100.0,
-                                            value=10.0)
-    total_sulfur_dioxide = st.sidebar.slider('Total Sulfur Dioxide',
-                                             min_value=0.0,
-                                             max_value=300.0,
-                                             value=30.0)
-    density = st.sidebar.slider('Density',
-                                min_value=0.0,
-                                max_value=2.0,
-                                value=1.0)
-    pH = st.sidebar.slider('pH',
-                           min_value=0.0,
-                           max_value=10.0,
-                           value=3.5)
-    sulphates = st.sidebar.slider('Sulphates',
-                                  min_value=0.0,
-                                  max_value=2.0,
-                                  value=0.5)
-    alcohol = st.sidebar.slider('Alcohol',
-                                min_value=8.0,
-                                max_value=16.0,
-                                value=10.0)
+    fixed_acidity, volatile_acidity, citric_acid, residual_sugar, \
+        chlorides, free_sulfur_dioxide, total_sulfur_dioxide, density, \
+        pH, sulphates, alcohol = add_sidebar()
 
     if st.sidebar.button('Predict'):
         input_data = InputData(
