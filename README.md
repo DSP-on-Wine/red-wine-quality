@@ -20,41 +20,50 @@ The goal of this project is to develop a machine learning model that accurately 
 ## Project Plan
 
 1. **Exploratory Data Analysis (EDA)**
+
    - Explore the dataset.
    - Visualize distributions and relationships between features.
    - Preprocess the data.
 
 2. **Baseline Model Development**
+
    - Train a baseline model without feature engineering.
    - Evaluate model performance.
 
 3. **Feature Engineering**
+
    - Engineer new features based on EDA insights.
    - Encode categorical variables.
    - Scale numerical features.
 
 4. **Model Improvement**
+
    - Select and tune machine learning algorithms.
    - Evaluate tuned models.
 
 5. **Integration with FastAPI**
+
    - Implement API endpoints for model prediction.
    - Test API locally.
 
 6. **Streamlit Dashboard Development**
+
    - Create a dashboard for data visualization and model predictions.
    - Include interactive components.
 
 7. **PostgreSQL Database Integration**
+
    - Set up a PostgreSQL database.
    - Load dataset into the database.
    - Write SQL queries for data retrieval.
 
 8. **Grafana Dashboard Creation**
+
    - Configure Grafana to connect with PostgreSQL.
    - Develop dashboards for monitoring data and model performance.
 
 9. **Workflow Management with Apache Airflow**
+
    - Design and schedule workflows using Apache Airflow.
    - Monitor and manage workflow execution.
 
@@ -64,12 +73,11 @@ The goal of this project is to develop a machine learning model that accurately 
     - Monitor application performance.
 
 ## Contributors
+
 ### The Data Vintners
+
 - [Bemnet Assefa](https://github.com/Beemnet)
 - [Zeineb Rania Labidi](https://github.com/ZeinebRania)
 - [Riwa Masaad](https://github.com/Masaad-Riwa)
 - [Aichen Sun](https://github.com/as5419)
 - [Chorten Tsomo Tamang](https://github.com/Chorten-Tsomo)
-
-
-
