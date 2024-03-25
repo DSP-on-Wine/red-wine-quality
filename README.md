@@ -19,24 +19,24 @@ The goal of this project is to develop a machine learning model that accurately 
 
 ## Project Plan
 
-1. **Exploratory Data Analysis (EDA)**
+1. **Exploratory Data Analysis (EDA)** [COMPLETE]
 
    - Explore the dataset.
    - Visualize distributions and relationships between features.
    - Preprocess the data.
 
-2. **Baseline Model Development**
+2. **Baseline Model Development** [COMPLETE]
 
    - Train a baseline model without feature engineering.
    - Evaluate model performance.
 
-3. **Feature Engineering**
+3. **Feature Engineering** [COMPLETE]
 
    - Engineer new features based on EDA insights.
    - Encode categorical variables.
    - Scale numerical features.
 
-4. **Model Improvement**
+4. **Model Improvement** [COMPLETE]
 
    - Select and tune machine learning algorithms.
    - Evaluate tuned models.
