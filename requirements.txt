@@ -7,9 +7,6 @@ fastapi==0.110.0
 uvicorn==0.29.0
 pydantic==2.6.4
 requests==2.31.0
-<<<<<<< HEAD
 psycopg2==2.9.9
-=======
 streamlit==1.32.2
 asyncpg==0.29.0
->>>>>>> 530d79536a808d64a8a1326e76bdf51cd3507e49
