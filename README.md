@@ -130,6 +130,74 @@ Follow these steps to test the API using the notebook:
 
 By following these steps, you can effectively test the FastAPI API with sample data using the provided notebook.
 
+
+### Setting Up PostgreSQL Database
+
+To set up the PostgreSQL database for the project, follow these steps:
+
+1. **Installation:**
+
+   - Go to [PostgreSQL Download Page](https://www.postgresql.org/download/) and download the appropriate installer for your operating system.
+   - Follow the on-screen installation instructions.
+   - During installation, you will be prompted to create a new admin password. 
+   - Leave the connection port as 5432.
+
+2. **Create a New PostgreSQL Server:**
+
+   - Open pgAdmin 4.
+   - Enter the admin password you input during installation.
+   - Create a new server named `wine_quality_local_server`.
+   - In the Connection tab, enter the Host name/address as `localhost` and keep the port as `5432`.
+   - Default username: `postgres`
+   - Password: admin password specified during installation.
+   - Save the settings.
+
+3. **Create a New Database:**
+
+   - Right-click on Databases under the `wine_quality_local_server` and choose Create -> Database.
+   - Name the database: `wine_quality_predictions`.
+   - Save the settings.
+
+4. **Create Predictions Table:**
+
+   - Open the query tool and execute the following script to create the predictions table:
+
+     ```sql
+     CREATE TABLE IF NOT EXISTS predictions (
+         id SERIAL PRIMARY KEY,
+         fixed_acidity FLOAT,
+         volatile_acidity FLOAT,
+         citric_acid FLOAT,
+         residual_sugar FLOAT,
+         chlorides FLOAT,
+         free_sulfur_dioxide FLOAT,
+         total_sulfur_dioxide FLOAT,
+         density FLOAT,
+         pH FLOAT,
+         sulphates FLOAT,
+         alcohol FLOAT,
+         prediction FLOAT,
+         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     );
+     ```
+
+5. **Update DATABASE_URL in main.py:**
+
+   - In the `main.py` file, make sure to update the `DATABASE_URL` variable with the correct connection details:
+
+     ```python
+     DATABASE_URL = "postgresql://username:password@host:port/databasename"
+     # Example:
+     DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality_predictions"
+     ```
+
+6. **Run the FastAPI Notebook:**
+
+   - Run the `fastapi.ipynb` notebook to save a prediction in the database.
+
+By following these steps, you can effectively set up the PostgreSQL database for the project.
+
+
 ## Running the Streamlit App
 
 Once the dependencies are installed, you can run the Streamlit app using the following command:

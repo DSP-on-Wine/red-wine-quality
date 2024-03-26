@@ -6,6 +6,7 @@ import joblib
 import asyncpg
 import datetime
 from typing import List
+import pandas as pd
 
 DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality_predictions"
 
@@ -57,19 +58,32 @@ async def save_prediction(data: InputData, prediction: Prediction):
     return {"message": "Prediction saved successfully."}
 
 # Endpoint for get past predictions
-@app.get("/get_past_predictions/", response_model=List[Prediction])
-async def get_past_predictions(start_date: datetime.datetime, end_date: datetime.datetime) -> List[Prediction]:
-    connection = await connect_to_db()  # Await the coroutine here
+@app.get("/get_past_predictions/")
+async def get_past_predictions(start_date: datetime.datetime, end_date: datetime.datetime):
+    connection = await connect_to_db()
     try:
         query = """
-            SELECT * FROM predictions
+            SELECT fixed_acidity, volatile_acidity, citric_acid, residual_sugar,
+                chlorides, free_sulfur_dioxide, total_sulfur_dioxide, density,
+                pH, sulphates, alcohol, prediction, timestamp
+            FROM predictions
             WHERE timestamp >= $1 AND timestamp <= $2
         """
         rows = await connection.fetch(query, start_date, end_date)
-        predictions = [Prediction(**row) for row in rows]
-        if not predictions:
+        if not rows:
             raise HTTPException(status_code=404, detail="No data found between the specified dates")
-        return predictions
+        
+        # Create a DataFrame from the fetched rows
+        df = pd.DataFrame(rows, columns=[
+            "fixed_acidity", "volatile_acidity", "citric_acid", "residual_sugar",
+            "chlorides", "free_sulfur_dioxide", "total_sulfur_dioxide", "density",
+            "pH", "sulphates", "alcohol", "prediction", "timestamp"
+        ])
+        
+        # Convert timestamp column to datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        
+        return df
     finally:
-        await connection.close()  # Close the connection after usage
+        await connection.close()
 
