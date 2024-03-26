@@ -1,35 +1,30 @@
 from fastapi import FastAPI, HTTPException
 from .models import InputData, Prediction
 from .preprocessing import preprocess_data
-from . import MODEL_PATH, SCALER_PATH
+from . import MODEL_PATH, SCALER_PATH, DATABASE_URL
 import joblib
 import asyncpg
 import datetime
 from typing import List
 import pandas as pd
 
-DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality_predictions"
 
 app = FastAPI()
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
-
-# Define prediction endpoint
-@app.post("/predict/")
-def predict(data: InputData):
-    processed_data = preprocess_data(data, scaler)
-    prediction = model.predict(processed_data)
-    prediction_response = Prediction(prediction=prediction[0])
-    return prediction_response
-
 async def connect_to_db():
     return await asyncpg.connect(DATABASE_URL)
 
+@app.post("/predict/")
+async def predict(data: InputData):
+    processed_data = preprocess_data(data, scaler)
+    prediction = model.predict(processed_data)
+    prediction_response = Prediction(prediction=prediction[0])
 
-async def insert_prediction(prediction_value, input_data):
+    # Insert prediction into the database
     timestamp = datetime.datetime.now()
-    connection = await connect_to_db()  # Await the coroutine here
+    connection = await connect_to_db()
     try:
         await connection.execute(
             """
@@ -40,22 +35,18 @@ async def insert_prediction(prediction_value, input_data):
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             """,
-            input_data.fixed_acidity, input_data.volatile_acidity,
-            input_data.citric_acid, input_data.residual_sugar,
-            input_data.chlorides, input_data.free_sulfur_dioxide,
-            input_data.total_sulfur_dioxide, input_data.density,
-            input_data.pH, input_data.sulphates, input_data.alcohol,
-            prediction_value, timestamp
+            data.fixed_acidity, data.volatile_acidity,
+            data.citric_acid, data.residual_sugar,
+            data.chlorides, data.free_sulfur_dioxide,
+            data.total_sulfur_dioxide, data.density,
+            data.pH, data.sulphates, data.alcohol,
+            prediction[0], timestamp
         )
     finally:
         await connection.close()  # Close the connection after usage
+    
+    return prediction_response
 
-
-# Define endpoint to save predictions into the database
-@app.post("/save_prediction/")
-async def save_prediction(data: InputData, prediction: Prediction):
-    await insert_prediction(prediction.prediction, data)
-    return {"message": "Prediction saved successfully."}
 
 # Endpoint for get past predictions
 @app.get("/get_past_predictions/")
@@ -86,4 +77,3 @@ async def get_past_predictions(start_date: datetime.datetime, end_date: datetime
         return df
     finally:
         await connection.close()
-
