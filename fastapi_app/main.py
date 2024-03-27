@@ -48,6 +48,16 @@ async def predict(data: InputData):
     return prediction_response
 
 
+@app.post("/predict_batch/", response_model=List[Prediction])
+async def predict_batch(data: List[InputData]):
+    predictions = []
+    for input_data in data:
+        processed_data = preprocess_data(input_data, scaler)
+        prediction = model.predict(processed_data)
+        predictions.append(Prediction(prediction=prediction))
+    return predictions
+
+
 # Endpoint for get past predictions
 @app.get("/get_past_predictions/")
 async def get_past_predictions(start_date: datetime.datetime, end_date: datetime.datetime):
