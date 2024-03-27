@@ -181,9 +181,9 @@ To set up the PostgreSQL database for the project, follow these steps:
      );
      ```
 
-5. **Update DATABASE_URL in main.py:**
+5. **Update DATABASE_URL in __init__.py in folder fastapi_app:**
 
-   - In the `main.py` file, make sure to update the `DATABASE_URL` variable with the correct connection details:
+   - In the `__init__.py` file, make sure to update the `DATABASE_URL` variable with the correct connection details:
 
      ```python
      DATABASE_URL = "postgresql://username:password@host:port/databasename"
