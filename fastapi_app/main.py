@@ -19,6 +19,7 @@ def predict(data: InputData):
     prediction_response = Prediction(prediction=prediction[0])
     return prediction_response
 
+
 @app.post("/predict_batch/", response_model=List[Prediction])
 async def predict_batch(data: List[InputData]):
     predictions = []
