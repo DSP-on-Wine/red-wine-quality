@@ -9,72 +9,13 @@ The goal of this project is to develop a machine learning model that accurately 
 ## Technologies Used
 
 - Python (programming language)
-- Pandas, NumPy, Matplotlib, Seaborn (libraries for data manipulation and visualization)
+- Pandas, NumPy, Joblib, Pydantic and other python libraries (full list of dependencies in `requirements.txt`)
 - Scikit-learn (machine learning library)
 - FastAPI (framework for building APIs)
 - Streamlit (framework for building data-driven web applications)
 - PostgreSQL (relational database management system)
 - Grafana (open-source analytics and monitoring platform)
 - Apache Airflow (workflow management platform)
-
-## Project Plan
-
-1. **Exploratory Data Analysis (EDA)** [COMPLETE]
-
-   - Explore the dataset.
-   - Visualize distributions and relationships between features.
-   - Preprocess the data.
-
-2. **Baseline Model Development** [COMPLETE]
-
-   - Train a baseline model without feature engineering.
-   - Evaluate model performance.
-
-3. **Feature Engineering** [COMPLETE]
-
-   - Engineer new features based on EDA insights.
-   - Encode categorical variables.
-   - Scale numerical features.
-
-4. **Model Improvement** [COMPLETE]
-
-   - Select and tune machine learning algorithms.
-   - Evaluate tuned models.
-
-5. **Integration with FastAPI** [COMPLETE]
-
-   - Implement API endpoints for model prediction. [COMPLETE]
-   - Implement API to get past predictions.
-   - Test API locally.
-
-6. **Streamlit Dashboard Development** [COMPLETE]
-
-   - Create a dashboard for data visualization and model predictions.
-   - Create a dashboard for viewing past predictions
-   - Include interactive components.
-
-7. **PostgreSQL Database Integration** [COMPLETE]
-
-   - Set up a PostgreSQL database.
-   - Load dataset into the database.
-   - Write SQL queries for data retrieval.
-
-8. **Grafana Dashboard Creation**
-
-   - Configure Grafana to connect with PostgreSQL.
-   - Develop dashboards for monitoring data and model performance.
-
-9. **Workflow Management with Apache Airflow**
-
-   - Design and schedule workflows using Apache Airflow.
-   - Monitor and manage workflow execution.
-
-10. **Integration Testing and Deployment**
-    - Conduct integration testing.
-    - Deploy the application in a production-like environment.
-    - Monitor application performance.
-
-**First project demo**: For the requirements of first defence of the project, refer to the `Follow-up Session 1` section of the ReadMe.
 
 ## Installation
 
@@ -114,7 +55,7 @@ To set up the PostgreSQL database for the project, follow these steps:
 3. **Create a New Database:**
 
    - Right-click on Databases under the `wine_quality_local_server` and choose Create -> Database.
-   - Name the database: `wine_quality_predictions`.
+   - Name the database: `wine_quality`.
    - Save the settings.
 
 4. **Create Predictions Table:**
@@ -147,7 +88,7 @@ To set up the PostgreSQL database for the project, follow these steps:
      ```python
      DATABASE_URL = "postgresql://username:password@host:port/databasename"
      # Example:
-     DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality_predictions"
+     DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality"
      ```
 
 6. **Run the FastAPI Notebook:**
@@ -158,7 +99,7 @@ To set up the PostgreSQL database for the project, follow these steps:
 
 By following these steps, you can effectively set up the PostgreSQL database for the project.
 
-## Testing the API with Sample Data
+### Testing the API with Sample Data
 
 To test the FastAPI API with sample data, you can use the provided Jupyter notebook `fastapi.ipynb`. This notebook sends a POST request to the `/predict/` endpoint with sample input data and displays the prediction received from the API response.
 
@@ -200,7 +141,7 @@ Follow these steps to test the API using the notebook:
 
 By following these steps, you can effectively test the FastAPI API with sample data using the provided notebook.
 
-## Running the Streamlit App
+### Running the Streamlit App
 
 Once the dependencies are installed, you can run the Streamlit app using the following command:
 
@@ -212,17 +153,19 @@ This will start the Streamlit server, and you can access the app in your web bro
 
 You should now be able to view the dataset used for training the model, and input details of new wine to get predictions.
 
-## Apache Airflow Docker Installation Guide (for Windows)
+### Apache Airflow Docker Installation Guide (for Windows)
 
 This guide will help you set up Apache Airflow with Docker and ingest the `winequality-red.csv` file using the `ingest_data.py` DAG.
 
-### Prerequisites
+#### Prerequisites
 
-- Docker Community Edition (CE)
-- Docker Compose v2.14.0 or newer
-- At least 4GB of memory allocated for Docker
+Before proceeding with the installation, ensure that you have the following prerequisites:
 
-### Installation Steps
+- **Docker Community Edition (CE)**: Install Docker CE on your Windows system. You can follow the installation guides found [here](https://docs.docker.com/desktop/install/windows-install/).
+- **Docker Compose v4.27.0 or newer**: Docker Compose is usually included with Docker Desktop for Windows installations. Ensure that you have a version of Docker Compose that is compatible with your Docker CE installation.
+- **At least 4GB of memory allocated for Docker**: Adjust the Docker memory settings to allocate at least 4GB of memory for Docker containers. This can be done through the Docker Desktop settings.
+
+#### Installation Steps
 
 1. **Navigate to the project directory:**
 
@@ -230,10 +173,12 @@ This guide will help you set up Apache Airflow with Docker and ingest the `wineq
    cd airflow
    ```
 
+   - Make sure that you have the file `docker-compose.yaml` in this directory. If not, please pull from the remote branch and try again.
+
 2. **Create necessary directories:**
 
    ```bash
-   mkdir logs plugins config
+   mkdir logs, plugins, config
    ```
 
 3. **Start Airflow using Docker Compose:**
@@ -259,40 +204,6 @@ This guide will help you set up Apache Airflow with Docker and ingest the `wineq
   ```bash
   docker-compose down --volumes --remove-orphans
   ```
-
-## Follow-up session 1
-
-### Objective:
-
-Demonstrate the functionality of the Webapp, API, and database components, including data preparation, ingestion pipeline setup, and handling data issues.
-
-### Tasks:
-
-1. **Webapp - API - DB Components Demo:** [COMPLETE]
-
-   - Set up the necessary infrastructure for the Webapp, API, and database components.
-   - Ensure that the Webapp can communicate with the API and that the API can interact with the database.
-
-2. **Data Preparation for Ingestion Job:** [ONGOING]
-
-   - Prepare the dataset for ingestion by splitting it into multiple files.
-   - Store the split files in a folder named `raw-data`, which will serve as the input for the ingestion job.
-
-3. **Script for Data Issue Generation:** [ONGOING]
-
-   - Develop a script with task `read data` to read from _raw-data_ and return filepath.
-   - Develop a script with task `save data` to move the _raw-data_ to _good-data_.
-
-4. **Script to Generate Data for Ingestion Job:**
-
-   - Create a Python script to generate data for the ingestion job.
-   - The script should take the dataset path, the path of the `raw-data` folder, and the number of files to generate as input parameters.
-
-5. **Simple Ingestion Pipeline Setup:**
-   - Develop an Airflow DAG for ingesting data from the `raw-data` folder to the `good-data` folder.
-   - Initially, the DAG should consist of two tasks:
-     - `read-data`: Randomly selects one file from `raw-data` and returns the file path.
-     - `save-file`: Moves the selected file from `raw-data` to `good-data`.
 
 ## Contributors
 
