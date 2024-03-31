@@ -209,7 +209,7 @@ Before proceeding with the installation, ensure that you have the following prer
 
 To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
 
-1. **Create a `raw-data` Folder:**
+1. **Create a `raw_data` Folder:**
 
    - Navigate to the root directory of the project.
    - Create a folder named `raw-data`.
@@ -226,12 +226,12 @@ To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
 4. **Run the Notebook Cells:**
 
    - Execute the cells in the notebook sequentially.
-   - The notebook will split the `winequality-red.csv` dataset, randomize the rows, and store them in separate CSV files within the `raw-data` folder.
+   - The notebook will split the `winequality-red.csv` dataset, randomize the rows, and store them in separate CSV files within the `raw_data` folder.
 
 5. **Verify Output:**
 
-   - After running all cells, check the `raw-data` folder to confirm that the dataset has been split and stored correctly.
-   - Each CSV file in the `raw-data` folder will contain a subset of the original dataset, with 10 rows per file. You can validate that the files each contain 10 rows of data, and there are the correct number of new files created.
+   - After running all cells, check the `raw_data` folder to confirm that the dataset has been split and stored correctly.
+   - Each CSV file in the `raw_data` folder will contain a subset of the original dataset, with 10 rows per file. You can validate that the files each contain 10 rows of data, and there are the correct number of new files created.
 
 By following these steps, you can effectively prepare the dataset for ingestion.
 
