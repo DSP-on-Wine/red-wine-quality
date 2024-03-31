@@ -114,7 +114,7 @@ To set up the PostgreSQL database for the project, follow these steps:
 3. **Create a New Database:**
 
    - Right-click on Databases under the `wine_quality_local_server` and choose Create -> Database.
-   - Name the database: `wine_quality_predictions`.
+   - Name the database: `wine_quality`.
    - Save the settings.
 
 4. **Create Predictions Table:**
@@ -281,14 +281,10 @@ Demonstrate the functionality of the Webapp, API, and database components, inclu
 3. **Script for Data Issue Generation:** [ONGOING]
 
    - Develop a script with task `read data` to read from _raw-data_ and return filepath.
-   - Develop a script with task `save data` to move the _raw-data_ to _good-data_.
+   - Develop a script with task `save file` to move the _raw-data_ to _good-data_.
 
-4. **Script to Generate Data for Ingestion Job:**
 
-   - Create a Python script to generate data for the ingestion job.
-   - The script should take the dataset path, the path of the `raw-data` folder, and the number of files to generate as input parameters.
-
-5. **Simple Ingestion Pipeline Setup:**
+4. **Simple Ingestion Pipeline Setup:**
    - Develop an Airflow DAG for ingesting data from the `raw-data` folder to the `good-data` folder.
    - Initially, the DAG should consist of two tasks:
      - `read-data`: Randomly selects one file from `raw-data` and returns the file path.
