@@ -17,7 +17,7 @@ Demonstrate the functionality of the Webapp, API, and database components, inclu
    - Set up the necessary infrastructure for the Webapp, API, and database components.
    - Ensure that the Webapp can communicate with the API and that the API can interact with the database.
 
-2. **Data Preparation for Ingestion Job:** [ONGOING]
+2. **Data Preparation for Ingestion Job:** [COMPLETE]
 
    - Prepare the dataset for ingestion by splitting it into multiple files.
    - Store the split files in a folder named `raw-data`, which will serve as the input for the ingestion job.

@@ -193,17 +193,47 @@ Before proceeding with the installation, ensure that you have the following prer
      - **Username:** airflow
      - **Password:** airflow
 
-### Usage
+#### Usage
 
 - After launching Airflow, you can start using the DAGs located in the `dags` directory.
 - Place your DAG files in the `dags` directory to schedule and execute tasks.
 
-### Cleanup
+#### Cleanup
 
 - To stop and remove containers, as well as delete volumes with database data, run:
   ```bash
   docker-compose down --volumes --remove-orphans
   ```
+
+### Data Preparation Using `data_preparation.ipynb`
+
+To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
+
+1. **Create a `raw-data` Folder:**
+
+   - Navigate to the root directory of the project.
+   - Create a folder named `raw-data`.
+
+2. **Ensure CSV Location:**
+
+   - Make sure the `winequality-red.csv` file is present in the root directory of the project.
+
+3. **Open and Run the Notebook:**
+
+   - Open the `data_preparation.ipynb` notebook using your preferred Jupyter Notebook environment.
+   - In the notebook, ensure that the file path to `winequality-red.csv` is correctly set to point to its location in the root directory. If you are preparing another file, please change the location accordingly.
+
+4. **Run the Notebook Cells:**
+
+   - Execute the cells in the notebook sequentially.
+   - The notebook will split the `winequality-red.csv` dataset, randomize the rows, and store them in separate CSV files within the `raw-data` folder.
+
+5. **Verify Output:**
+
+   - After running all cells, check the `raw-data` folder to confirm that the dataset has been split and stored correctly.
+   - Each CSV file in the `raw-data` folder will contain a subset of the original dataset, with 10 rows per file. You can validate that the files each contain 10 rows of data, and there are the correct number of new files created.
+
+By following these steps, you can effectively prepare the dataset for ingestion.
 
 ## Contributors
 
