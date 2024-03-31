@@ -5,7 +5,7 @@ from . import MODEL_PATH, SCALER_PATH, DATABASE_URL
 import joblib
 import asyncpg
 import datetime
-from typing import List
+from typing import List, Union
 import pandas as pd
 
 
@@ -17,39 +17,10 @@ async def connect_to_db():
     return await asyncpg.connect(DATABASE_URL)
 
 @app.post("/predict/")
-async def predict(data: InputData):
-    processed_data = preprocess_data(data, scaler)
-    prediction = model.predict(processed_data)
-    prediction_response = Prediction(prediction=prediction[0])
-
-    # Insert prediction into the database
-    timestamp = datetime.datetime.now()
-    connection = await connect_to_db()
-    try:
-        await connection.execute(
-            """
-            INSERT INTO predictions (
-                fixed_acidity, volatile_acidity, citric_acid, residual_sugar,
-                chlorides, free_sulfur_dioxide, total_sulfur_dioxide, density,
-                pH, sulphates, alcohol, prediction, timestamp
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-            """,
-            data.fixed_acidity, data.volatile_acidity,
-            data.citric_acid, data.residual_sugar,
-            data.chlorides, data.free_sulfur_dioxide,
-            data.total_sulfur_dioxide, data.density,
-            data.pH, data.sulphates, data.alcohol,
-            prediction[0], timestamp
-        )
-    finally:
-        await connection.close()  # Close the connection after usage
+async def predict(data: Union[InputData, List[InputData]]):
+    if isinstance(data, InputData):
+        data = [data]  # Convert single input data to list for consistency
     
-    return prediction_response
-
-
-@app.post("/predict_batch/", response_model=List[Prediction])
-async def predict_batch(data: List[InputData]):
     predictions = []
     for input_data in data:
         processed_data = preprocess_data(input_data, scaler)
@@ -80,6 +51,7 @@ async def predict_batch(data: List[InputData]):
             await connection.close()  # Close the connection after usage
 
         predictions.append(prediction_response)
+    
     return predictions
 
 
