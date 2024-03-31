@@ -5,26 +5,7 @@ from predictor import predict
 from data_loader import load_data
 from sidebar import add_sidebar
 from batch_predict import batch_predict
-from get_predictions import get_predictions
-import datetime
-
-def past_predictions_page():
-    st.title('Past Predictions')
-
-    start_date = st.date_input('Start Date', datetime.date.today() - datetime.timedelta(days=7))
-    end_date = st.date_input('End Date', datetime.date.today())
-
-    if start_date <= end_date:
-        if st.button('Get Past Predictions'):
-            past_predictions_data = get_predictions(start_date, end_date)
-
-            if not isinstance(past_predictions_data, str):
-                st.subheader('Past Predictions')
-                st.dataframe(past_predictions_data)
-            else:
-                st.error(past_predictions_data)
-    else:
-        st.error('Error: End date must be after or equal to start date.')
+from past_predictions import past_predictions_page
 
 
 def main():

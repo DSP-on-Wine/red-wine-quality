@@ -1,7 +1,6 @@
 import pandas as pd
 import requests
 from models import InputData
-from predictor import predict
 
 
 def batch_predict(df: pd.DataFrame):
@@ -23,14 +22,15 @@ def batch_predict(df: pd.DataFrame):
         )
 
         input_data_list.append(input_data)
-        
-    predict_endpoint="http://localhost:8000/predict"
-    response = requests.post(predict_endpoint, json=[data.dict() 
-                                                     for data in input_data_list])
+
+    predict_endpoint = "http://localhost:8000/predict"
+    response = requests.post(predict_endpoint, json=[
+        data.dict()
+        for data in input_data_list])
 
     if response.status_code == 200:
         predictions = response.json()
-        output = "\n".join([f"{i}: {pred['prediction']}\n" 
+        output = "\n".join([f"{i}: {pred['prediction']}\n"
                             for i, pred in enumerate(predictions)])
 
         return output
