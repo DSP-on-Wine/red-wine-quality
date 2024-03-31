@@ -1,10 +1,12 @@
 import pandas as pd
+import requests
 from models import InputData
-from predictor import predict
+
 
 
 def batch_predict(df: pd.DataFrame):
     predictions = []
+    input_data_list = []
     for index, row in df.iterrows():
         input_data = InputData(
             fixed_acidity=row['fixed acidity'],
@@ -19,8 +21,19 @@ def batch_predict(df: pd.DataFrame):
             sulphates=row['sulphates'],
             alcohol=row['alcohol']
         )
-        # Make prediction using your model
-        prediction = predict(input_data.dict())
-        predictions.append(prediction)
 
-    return predictions
+        input_data_list.append(input_data)
+
+    predict_endpoint = "http://localhost:8000/predict"
+    response = requests.post(predict_endpoint, json=[
+        data.dict()
+        for data in input_data_list])
+
+    if response.status_code == 200:
+        predictions = response.json()
+        output = "\n".join([f"{i}: {pred['prediction']}\n"
+                            for i, pred in enumerate(predictions)])
+
+        return output
+    else:
+        return f"Error: {response.text}"

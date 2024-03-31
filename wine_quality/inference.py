@@ -11,3 +11,4 @@ def make_predictions(input_data: pd.DataFrame) -> np.ndarray:
     predictions = model.predict(X_processed)
 
     return predictions
+
