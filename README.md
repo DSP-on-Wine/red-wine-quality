@@ -49,7 +49,7 @@ The goal of this project is to develop a machine learning model that accurately 
 
 6. **Streamlit Dashboard Development** [COMPLETE]
 
-   - Create a dashboard for data visualization and model predictions. 
+   - Create a dashboard for data visualization and model predictions.
    - Create a dashboard for viewing past predictions
    - Include interactive components.
 
@@ -58,7 +58,7 @@ The goal of this project is to develop a machine learning model that accurately 
    - Set up a PostgreSQL database.
    - Load dataset into the database.
    - Write SQL queries for data retrieval.
-  
+
 8. **Grafana Dashboard Creation**
 
    - Configure Grafana to connect with PostgreSQL.
@@ -84,13 +84,11 @@ Follow these steps to set up and install the project:
 
 2. **Navigate to the project directory:** `cd red-wine-quality`
 
-
 ### Install Dependencies
 
 1. Make sure you have Python and pip installed on your system.
 
 2. Install the required dependencies using pip: `pip install -r requirements.txt`
-
 
 ### Setting Up PostgreSQL Database
 
@@ -100,7 +98,7 @@ To set up the PostgreSQL database for the project, follow these steps:
 
    - Go to [PostgreSQL Download Page](https://www.postgresql.org/download/) and download the appropriate installer for your operating system.
    - Follow the on-screen installation instructions.
-   - During installation, you will be prompted to create a new admin password. 
+   - During installation, you will be prompted to create a new admin password.
    - Leave the connection port as 5432.
 
 2. **Create a New PostgreSQL Server:**
@@ -142,7 +140,7 @@ To set up the PostgreSQL database for the project, follow these steps:
      );
      ```
 
-5. **Update DATABASE_URL in __init__.py in folder fastapi_app:**
+5. **Update DATABASE_URL in **init**.py in folder fastapi_app:**
 
    - In the `__init__.py` file, make sure to update the `DATABASE_URL` variable with the correct connection details:
 
@@ -155,12 +153,10 @@ To set up the PostgreSQL database for the project, follow these steps:
 6. **Run the FastAPI Notebook:**
 
    - If you have the fastapi app running, run the `fastapi.ipynb` notebook to save a prediction in the database. If not, follow the following section on how to launch the fastapi app.
-  
+
    We will not be using the `postgreSQL.ipynb` notebook for this exercise.
 
-
 By following these steps, you can effectively set up the PostgreSQL database for the project.
-
 
 ## Testing the API with Sample Data
 
@@ -216,27 +212,79 @@ This will start the Streamlit server, and you can access the app in your web bro
 
 You should now be able to view the dataset used for training the model, and input details of new wine to get predictions.
 
+## Apache Airflow Docker Installation Guide (for Windows)
+
+This guide will help you set up Apache Airflow with Docker and ingest the `winequality-red.csv` file using the `ingest_data.py` DAG.
+
+### Prerequisites
+
+- Docker Community Edition (CE)
+- Docker Compose v2.14.0 or newer
+- At least 4GB of memory allocated for Docker
+
+### Installation Steps
+
+1. **Navigate to the project directory:**
+
+   ```bash
+   cd airflow
+   ```
+
+2. **Create necessary directories:**
+
+   ```bash
+   mkdir logs plugins config
+   ```
+
+3. **Start Airflow using Docker Compose:**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access Airflow web interface:**
+   - Once the services are up and running, you can access the Airflow web interface at [http://localhost:8080](http://localhost:8080).
+   - Use the following credentials to log in:
+     - **Username:** airflow
+     - **Password:** airflow
+
+### Usage
+
+- After launching Airflow, you can start using the DAGs located in the `dags` directory.
+- Place your DAG files in the `dags` directory to schedule and execute tasks.
+
+### Cleanup
+
+- To stop and remove containers, as well as delete volumes with database data, run:
+  ```bash
+  docker-compose down --volumes --remove-orphans
+  ```
 
 ## Follow-up session 1
 
 ### Objective:
+
 Demonstrate the functionality of the Webapp, API, and database components, including data preparation, ingestion pipeline setup, and handling data issues.
 
 ### Tasks:
 
 1. **Webapp - API - DB Components Demo:** [COMPLETE]
+
    - Set up the necessary infrastructure for the Webapp, API, and database components.
    - Ensure that the Webapp can communicate with the API and that the API can interact with the database.
 
-2. **Script for Data Issue Generation:** [ONGOING]
-   - Develop a script to introduce data issues in the dataset.
-   - The script should be capable of generating various types of data errors, as per project instructions.
+2. **Data Preparation for Ingestion Job:** [ONGOING]
 
-3. **Data Preparation for Ingestion Job:** [ONGOING]
    - Prepare the dataset for ingestion by splitting it into multiple files.
    - Store the split files in a folder named `raw-data`, which will serve as the input for the ingestion job.
 
+3. **Script for Data Issue Generation:** [ONGOING]
+
+   - Develop a script with task `read data` to read from _raw-data_ and return filepath.
+   - Develop a script with task `save data` to move the _raw-data_ to _good-data_.
+
 4. **Script to Generate Data for Ingestion Job:**
+
    - Create a Python script to generate data for the ingestion job.
    - The script should take the dataset path, the path of the `raw-data` folder, and the number of files to generate as input parameters.
 
