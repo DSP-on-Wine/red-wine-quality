@@ -41,7 +41,7 @@ The goal of this project is to develop a machine learning model that accurately 
    - Select and tune machine learning algorithms.
    - Evaluate tuned models.
 
-5. **Integration with FastAPI**
+5. **Integration with FastAPI** [COMPLETE]
 
    - Implement API endpoints for model prediction. [COMPLETE]
    - Implement API to get past predictions.
@@ -83,6 +83,7 @@ Follow these steps to set up and install the project:
 1. **Clone the repository:** https://github.com/DSP-on-Wine/red-wine-quality.git
 
 2. **Navigate to the project directory:** `cd red-wine-quality`
+
 
 ### Install Dependencies
 
