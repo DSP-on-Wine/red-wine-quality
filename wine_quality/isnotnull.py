@@ -21,6 +21,7 @@ def isnotnull(id, item):
         connection.commit()
         cursor.close()
         connection.close()
+
         return False
     else:
         cursor.close()

@@ -91,6 +91,5 @@ async def get_past_predictions(start_date: datetime.datetime,
         df['timestamp'] = pd.to_datetime(df['timestamp'])
 
         return df
-
     finally:
         await connection.close()

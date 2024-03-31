@@ -158,6 +158,7 @@ To set up the PostgreSQL database for the project, follow these steps:
   
    We will not be using the `postgreSQL.ipynb` notebook for this exercise.
 
+
 By following these steps, you can effectively set up the PostgreSQL database for the project.
 
 
@@ -202,8 +203,6 @@ Follow these steps to test the API using the notebook:
    Feel free to experiment with different sample data by modifying the values in the `sample_data` dictionary and re-executing the notebook cells.
 
 By following these steps, you can effectively test the FastAPI API with sample data using the provided notebook.
-
-
 
 ## Running the Streamlit App
 
