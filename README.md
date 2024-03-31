@@ -59,9 +59,6 @@ The goal of this project is to develop a machine learning model that accurately 
    - Load dataset into the database.
    - Write SQL queries for data retrieval.
   
-7.a **First project demo**
-For the requirements of first defense of the project, refer to the `Follow-up Session 1` section of the ReadMe.
-
 8. **Grafana Dashboard Creation**
 
    - Configure Grafana to connect with PostgreSQL.
@@ -76,6 +73,8 @@ For the requirements of first defense of the project, refer to the `Follow-up Se
     - Conduct integration testing.
     - Deploy the application in a production-like environment.
     - Monitor application performance.
+
+**First project demo**: For the requirements of first defence of the project, refer to the `Follow-up Session 1` section of the ReadMe.
 
 ## Installation
 
