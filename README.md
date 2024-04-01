@@ -174,12 +174,12 @@ To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
 4. **Run the Notebook Cells:**
 
    - Execute the cells in the notebook sequentially.
-   - The notebook will split the `winequality-red.csv` dataset, randomize the rows, and store them in separate CSV files within the `raw_data` folder.
+   - The notebook will generate 20 random errors within the `winequality-red.csv` dataset. It will then split the dataset by randomly selecting 10 rows at a time and store each split in separate CSV files within the `raw_data` folder.
 
 5. **Verify Output:**
 
    - After running all cells, check the `raw_data` folder to confirm that the dataset has been split and stored correctly.
-   - Each CSV file in the `raw_data` folder will contain a subset of the original dataset, with 10 rows per file. You can validate that the files each contain 10 rows of data, and there are the correct number of new files created.
+   - Each CSV file in the `raw_data` folder will contain a subset of the original dataset with 10 rows per file. You can validate that the files each contain 10 rows of data, and there are the correct number of new files created.
    - If you are splitting the `winequality-red.csv` dataset, you should now have 160 files with 10 rows of data each.
 
 By following these steps, you can effectively prepare the dataset for ingestion. You can now move on to the next step
