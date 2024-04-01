@@ -174,6 +174,11 @@ Before proceeding with the installation, ensure that you have the following prer
    ```
 
    - Make sure that you have the file `docker-compose.yaml` in this directory. If not, please pull from the remote branch and try again.
+   - The two additional volumes were added to the `docker-compose.yaml` to specify the raw_data and good_data volumes.
+   ```bash
+   ${RAW_DATA_DIR}:/opt/airflow/raw_data
+   ${GOOD_DATA_DIR}:/opt/airflow/good_data
+   ```
 
 2. **Create necessary directories:**
 
@@ -181,11 +186,25 @@ Before proceeding with the installation, ensure that you have the following prer
    mkdir logs, plugins, config
    ```
 
-3. **Start Airflow using Docker Compose:**
+3. **Modify paths in .env file:**
+
+Modify the paths in the .env file
+RAW_DATA_DIR and GOOD_DATA_DIR should specify the paths of the raw_data and good_data folders.
+
+   ```bash
+   AIRFLOW_IMAGE_NAME=apache/airflow:2.8.4
+   AIRFLOW_UID=50000
+   RAW_DATA_DIR = '../raw_data'
+   GOOD_DATA_DIR = '../good_data'
+   ``` 
+   
+4. **Start Airflow using Docker Compose:**
 
    ```bash
    docker-compose up -d
    ```
+
+5. **Make sure docker is enable in the windows firewall.**
 
 4. **Access Airflow web interface:**
    - Once the services are up and running, you can access the Airflow web interface at [http://localhost:8080](http://localhost:8080).

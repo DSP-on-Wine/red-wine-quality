@@ -1,13 +1,24 @@
+#!/Users/LEGION/miniconda3/envs/dsp_proj/bin/python
+
 import logging
 import os
 import random
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.utils.dates import days_ago
+import shutil
 
-# Define the absolute paths to raw_data and good_data directories
-RAW_DATA_DIR = '/sources/raw_data'
+RAW_DATA_DIR = 'raw_data'
 GOOD_DATA_DIR = 'good_data'
+
+def move_file(file_path: str, target_dir: str) -> None:
+    if os.path.exists(file_path):
+        file_name = os.path.basename(file_path)
+        target_path = os.path.join(target_dir, file_name)
+        shutil.move(file_path, target_path)
+        logging.info(f"Moved file {file_name} to {target_dir}.")
+    else:
+        logging.info(f"File {file_path} does not exist.")
 
 @dag(
     dag_id='ingest_wine_data',
@@ -36,13 +47,17 @@ def ingest_wine_data():
     @task
     def save_file(file_path: str) -> None:
         if file_path:
-            # Move the selected file to the good data directory
-            file_name = os.path.basename(file_path)
-            new_file_path = os.path.join(GOOD_DATA_DIR, file_name)
-            os.rename(file_path, new_file_path)
-            logging.info(f"Moved file {file_name} from raw-data to good-data.")
+            move_file(file_path, GOOD_DATA_DIR)
         else:
             logging.info("No file to save.")
+        # if file_path:
+        #     # Move the selected file to the good data directory
+        #     file_name = os.path.basename(file_path)
+        #     new_file_path = os.path.join(GOOD_DATA_DIR, file_name)
+        #     os.rename(file_path, new_file_path)
+        #     logging.info(f"Moved file {file_name} from raw-data to good-data.")
+        # else:
+        #     logging.info("No file to save.")
 
     # Define the task dependency
     file_path = read_data()
