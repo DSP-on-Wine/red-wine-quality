@@ -147,7 +147,8 @@ By following these steps, you can effectively test the FastAPI API with sample d
 
 ### Running the Streamlit App
 
-Once the dependencies are installed, you can run the Streamlit app using the following command from the root directory:
+Once the fastAPI app is running, you can run the Streamlit app using the following command from the root directory.
+Keep the API running, open a new terminal and run the command:
 
 ```bash
 streamlit run streamlit_app/main.py
@@ -161,8 +162,9 @@ You are now equipped to perform several actions with the application:
 - Input details of new wine to receive predictions.
 - Upload a CSV file containing test datasets to obtain batch predictions.
 - Review all past predictions made by you within a specific time frame.
+  Note: Ensure to adjust the start and end dates in the app according to the time intervals during which you made predictions.
 
-These functionalities empower you to interact comprehensively with the application, from exploring the dataset to utilizing the prediction capabilities, enhancing your overall user experience.
+These functionalities allow you to interact comprehensively with the application, from exploring the dataset to using the prediction capabilities, enhancing your overall user experience.
 
 ### Data Preparation Using `data_preparation.ipynb`
 
