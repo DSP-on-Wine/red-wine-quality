@@ -27,7 +27,7 @@ Follow these steps to set up and install the project:
 
 ### Install Dependencies
 
-1. Make sure you have Python and pip installed on your system.
+1. Make sure you have Python version 3.12 and pip installed on your system.
 
 2. Install the required dependencies using pip: `pip install -r requirements.txt`
 
@@ -81,25 +81,29 @@ To set up the PostgreSQL database for the project, follow these steps:
      );
      ```
 
-5. **Update DATABASE_URL in **init**.py in folder fastapi_app:**
+5. **Create a `.env` file:**
 
-   - In the `__init__.py` file, make sure to update the `DATABASE_URL` variable with the correct connection details:
+   - In the root directory of the project, create a new file named `.env`.
+   - Inside the `.env` file, define the following environment variables with your PostgreSQL connection details:
 
-     ```python
-     DATABASE_URL = "postgresql://username:password@host:port/databasename"
-     # Example:
-     DATABASE_URL = "postgresql://postgres:123@localhost:5432/wine_quality"
+     ```ini
+     DB_USER=postgres
+     DB_PASSWORD=123
+     DB_HOST=localhost
+     DB_PORT=5432
+     DB_NAME=wine_quality
      ```
+
+   - Replace the values with your actual PostgreSQL connection details. Make sure to not include any quotation marks or spaces around the values.
+   - Save the `.env` file in the root directory of your project.
 
 6. **Run the FastAPI Notebook:**
 
-   - If you have the fastapi app running, run the `fastapi.ipynb` notebook to save a prediction in the database. If not, follow the following section on how to launch the fastapi app.
+   - If you have the fastAPI app running, run the `fastapi.ipynb` notebook to save a prediction in the database. If not, follow the following section on how to test the FastAPI with sample data.
 
-   We will not be using the `postgreSQL.ipynb` notebook for this exercise.
+By following the above steps, you can effectively set up the PostgreSQL database for the project.
 
-By following these steps, you can effectively set up the PostgreSQL database for the project.
-
-### Testing the API with Sample Data
+### Testing the FastAPI with Sample Data
 
 To test the FastAPI API with sample data, you can use the provided Jupyter notebook `fastapi.ipynb`. This notebook sends a POST request to the `/predict/` endpoint with sample input data and displays the prediction received from the API response.
 
@@ -110,7 +114,7 @@ Follow these steps to test the API using the notebook:
    Before testing the API, ensure that your FastAPI server is running locally. If you haven't started the server yet, follow these steps:
 
    - Open a terminal or command prompt.
-   - Navigate to the directory containing your FastAPI application script (e.g., `main.py`).
+   - Navigate to the root directory of your project.
    - Run the following command to start the FastAPI server:
 
      ```bash
@@ -125,7 +129,7 @@ Follow these steps to test the API using the notebook:
 
 3. **Execute the Notebook Cells:**
 
-   Execute the cells in the notebook sequentially to send a POST request to the FastAPI server with sample input data.
+   Execute the cells in the notebook sequentially to send a POST request to the FastAPI server with sample input data for both single and batch prediction jobs.
 
 4. **Check the Prediction:**
 
@@ -137,13 +141,14 @@ Follow these steps to test the API using the notebook:
 
 6. **Experiment with Different Data:**
 
-   Feel free to experiment with different sample data by modifying the values in the `sample_data` dictionary and re-executing the notebook cells.
+   Feel free to experiment with different sample data by modifying the values in the `sample_data` dictionary for single predict requests or changing the `test-data.csv` for batch predicting and re-executing the notebook cells.
 
 By following these steps, you can effectively test the FastAPI API with sample data using the provided notebook.
 
 ### Running the Streamlit App
 
-Once the dependencies are installed, you can run the Streamlit app using the following command:
+Once the fastAPI app is running, you can run the Streamlit app using the following command from the root directory.
+Keep the API running, open a new terminal and run the command:
 
 ```bash
 streamlit run streamlit_app/main.py
@@ -151,7 +156,15 @@ streamlit run streamlit_app/main.py
 
 This will start the Streamlit server, and you can access the app in your web browser at http://localhost:8501.
 
-You should now be able to view the dataset used for training the model, and input details of new wine to get predictions.
+You are now equipped to perform several actions with the application:
+
+- Explore the dataset used to train the model.
+- Input details of new wine to receive predictions.
+- Upload a CSV file containing test datasets to obtain batch predictions.
+- Review all past predictions made by you within a specific time frame.
+  Note: Ensure to adjust the start and end dates in the app according to the time intervals during which you made predictions.
+
+These functionalities allow you to interact comprehensively with the application, from exploring the dataset to using the prediction capabilities, enhancing your overall user experience.
 
 ### Data Preparation Using `data_preparation.ipynb`
 
@@ -160,7 +173,7 @@ To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
 1. **Create a `raw_data` Folder:**
 
    - Navigate to the root directory of the project.
-   - Create two folders named `raw_data` and `good_data`. `good_data` will remain empty for now, we will only be using `raw_data`.
+   - Create two folders named `raw_data` and `good_data`. (`good_data` will remain empty for now, we will only be using `raw_data`.)
 
 2. **Ensure CSV Location:**
 
@@ -174,7 +187,7 @@ To prepare the `winequality-red.csv` dataset for ingestion, follow these steps:
 4. **Run the Notebook Cells:**
 
    - Execute the cells in the notebook sequentially.
-   - The notebook will generate 20 random errors within the `winequality-red.csv` dataset. It will then split the dataset by randomly selecting 10 rows at a time and store each split in separate CSV files within the `raw_data` folder.
+   - The notebook will generate 20 random errors within the `winequality-red.csv` dataset. It will then split the dataset by randomly selecting 10 rows at a time and stores each split in separate CSV files within the `raw_data` folder.
 
 5. **Verify Output:**
 
@@ -214,11 +227,7 @@ Before proceeding with the installation, ensure that you have the following prer
 
 3. **Add paths in .env file:**
 
-   - Create a `.env` file wth the following directories. You should have created the folders `raw_data` and `good_data` when doing the data preparation in the previous step. If the files are not present locally, please refer to the section above.
-
-   - Now, we must specify their location to be accessed by the `docker-compose.yaml` file.
-   - RAW_DATA_DIR and GOOD_DATA_DIR should specify the paths of the raw_data and good_data folders in your directory.
-   - AIRFLOW_IMAGE_NAME and AIRFLOW_UID refer to default values used by docker.
+   - Within the airflow folder, generate a `.env` file and specify the following directories.
 
    ```bash
    AIRFLOW_IMAGE_NAME=apache/airflow:2.8.4
@@ -226,6 +235,13 @@ Before proceeding with the installation, ensure that you have the following prer
    RAW_DATA_DIR = '../raw_data'
    GOOD_DATA_DIR = '../good_data'
    ```
+
+   Note that this `.env` file is distinct from the one you created in the root directory, which contains database connection information.
+
+   - Ensure you've previously created the `raw_data` and `good_data` folders during the data preparation phase. If these folders or the files within `raw_data` are not present locally, refer to the **Data Preparation** section above.
+
+   - RAW_DATA_DIR and GOOD_DATA_DIR should specify the paths of the raw_data and good_data folders in your directory.
+   - AIRFLOW_IMAGE_NAME and AIRFLOW_UID refer to default values used by docker.
 
 4. **Start Airflow using Docker Compose:**
 

@@ -8,7 +8,7 @@ def past_predictions_page():
 
     today = datetime.date.today()
     week_ago = today - datetime.timedelta(days=7)
-    start_date = st.date_input('Start Date', today - week_ago)
+    start_date = st.date_input('Start Date', week_ago)
     end_date = st.date_input('End Date', today)
 
     if start_date <= end_date:
