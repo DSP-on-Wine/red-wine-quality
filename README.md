@@ -27,7 +27,7 @@ Follow these steps to set up and install the project:
 
 ### Install Dependencies
 
-1. Make sure you have Python and pip installed on your system.
+1. Make sure you have Python version 3.12 and pip installed on your system.
 
 2. Install the required dependencies using pip: `pip install -r requirements.txt`
 
@@ -95,7 +95,6 @@ To set up the PostgreSQL database for the project, follow these steps:
 
    - If you have the fastapi app running, run the `fastapi.ipynb` notebook to save a prediction in the database. If not, follow the following section on how to launch the fastapi app.
 
-   We will not be using the `postgreSQL.ipynb` notebook for this exercise.
 
 By following these steps, you can effectively set up the PostgreSQL database for the project.
 
