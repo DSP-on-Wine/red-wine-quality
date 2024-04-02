@@ -3,7 +3,6 @@ import requests
 from models import InputData
 
 
-
 def batch_predict(df: pd.DataFrame):
     predictions = []
     input_data_list = []
