@@ -17,6 +17,7 @@ scaler = joblib.load(SCALER_PATH)
 async def connect_to_db():
     return await asyncpg.connect(DATABASE_URL)
 
+
 async def insert_prediction_into_db(input_data, prediction):
     timestamp = datetime.datetime.now()
     connection = await connect_to_db()
@@ -46,7 +47,7 @@ async def insert_prediction_into_db(input_data, prediction):
 @app.post("/predict/")
 async def predict(data: Union[InputData, List[InputData]]):
     if isinstance(data, InputData):
-        data = [data]  # Convert single input data to list for consistency
+        data = [data]
 
     predictions = []
     for input_data in data:
@@ -62,8 +63,10 @@ async def predict(data: Union[InputData, List[InputData]]):
 
 
 @app.get("/get_past_predictions/")
-async def get_past_predictions(start_date: datetime.datetime, end_date: datetime.datetime):
-    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+async def get_past_predictions(start_date: datetime.datetime,
+                               end_date: datetime.datetime):
+    end_date = end_date.replace(hour=23, minute=59,
+                                second=59, microsecond=999999)
     connection = await connect_to_db()
     try:
         query = """
