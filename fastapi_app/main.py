@@ -56,7 +56,6 @@ async def predict(data: Union[InputData, List[InputData]]):
         prediction_response = Prediction(prediction=prediction[0])
 
         await insert_prediction_into_db(input_data, prediction[0])
-
         predictions.append(prediction_response)
 
     return predictions
