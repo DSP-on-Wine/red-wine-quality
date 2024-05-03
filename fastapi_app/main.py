@@ -70,10 +70,7 @@ async def get_past_predictions(start_date: datetime.datetime,
     connection = await connect_to_db()
     try:
         query = """
-            SELECT fixed_acidity, volatile_acidity, citric_acid,
-            residual_sugar, chlorides, free_sulfur_dioxide,
-            total_sulfur_dioxide, density, pH, sulphates, alcohol,
-            prediction, timestamp
+            SELECT *
             FROM predictions
             WHERE timestamp >= $1 AND timestamp <= $2
         """
