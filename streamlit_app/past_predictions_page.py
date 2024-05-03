@@ -10,11 +10,12 @@ def past_predictions_page():
     week_ago = today - datetime.timedelta(days=7)
     start_date = st.date_input('Start Date', week_ago)
     end_date = st.date_input('End Date', today)
+    ## TODO - show drop down option of sources of prediction
 
     if start_date <= end_date:
         if st.button('Get Past Predictions'):
             past_predictions_data = get_predictions(start_date, end_date)
-
+            ## TODO - send the source of the prediction specified in input
             if not isinstance(past_predictions_data, str):
                 st.subheader('Past Predictions')
                 st.dataframe(past_predictions_data)
