@@ -53,7 +53,11 @@ The goal is to develop a machine learning model that predicts red wine quality. 
    - Configure Grafana to connect with PostgreSQL.
    - Develop dashboards for monitoring data and model performance.
 
+<<<<<<< HEAD
 9. **Workflow Management with Apache Airflow**
+=======
+9. **Workflow Management with Apache Airflow** [ONGOING]
+>>>>>>> 918a146816d2cb94bff7d8b184e2bc15677387e0
 
    - Design and schedule workflows using Apache Airflow.
    - Monitor and manage workflow execution.

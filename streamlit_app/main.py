@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import pandas as pd
 import streamlit as st
 from models import InputData
@@ -6,10 +7,16 @@ from data_loader import load_data
 from sidebar import add_sidebar
 from batch_predict import batch_predict
 from past_predictions import past_predictions_page
+=======
+import streamlit as st
+from past_predictions_page import past_predictions_page
+from predict_page import predict_page
+>>>>>>> 918a146816d2cb94bff7d8b184e2bc15677387e0
 
 
 def main():
     st.title('Red Wine Quality Predictor')
+<<<<<<< HEAD
     # File uploader for CSV file
     page = st.sidebar.selectbox("Select a page", ["Home", "Past Predictions"])
 
@@ -55,6 +62,15 @@ def main():
 
     elif page == "Past Predictions":
         # Render past predictions page
+=======
+    page = st.sidebar.selectbox("Select a page",
+                                ["Predict", "Past Predictions"])
+
+    if page == "Predict":
+        predict_page()
+
+    elif page == "Past Predictions":
+>>>>>>> 918a146816d2cb94bff7d8b184e2bc15677387e0
         past_predictions_page()
 
 

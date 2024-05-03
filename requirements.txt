@@ -12,4 +12,7 @@ streamlit==1.32.2
 asyncpg==0.29.0
 python-dotenv==1.0.1
 jupyter==1.0.0
+<<<<<<< HEAD
 apache-airflow==2.7.2
+=======
+>>>>>>> 918a146816d2cb94bff7d8b184e2bc15677387e0
