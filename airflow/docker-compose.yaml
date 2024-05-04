@@ -76,6 +76,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
     - ${RAW_DATA_DIR}:/opt/airflow/raw_data
     - ${GOOD_DATA_DIR}:/opt/airflow/good_data
+    - ${BAD_DATA_DIR}:/opt/airflow/bad_data
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -100,6 +101,13 @@ services:
       start_period: 5s
     restart: always
 
+  great_expectations:
+    build:
+      context: ./great_expectations
+    volumes:
+      - ./great_expectations:/great_expectations
+    command: ["sleep", "infinity"]
+    
   redis:
     image: redis:latest
     expose:
@@ -108,7 +116,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 30s
-      retries: 50
+      retries: 50 
       start_period: 30s
     restart: always
 
@@ -234,6 +242,7 @@ services:
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
         exec /entrypoint airflow version
+        sh -c "pip install great_expectations && airflow db init && airflow webserver"
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
