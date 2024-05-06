@@ -242,7 +242,6 @@ services:
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
         exec /entrypoint airflow version
-        sh -c "pip install great_expectations && airflow db init && airflow webserver"
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
