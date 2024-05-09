@@ -13,7 +13,7 @@ def past_predictions_page():
     ## TODO - show drop down option of sources of prediction
     
         # Define or fetch sources (replace this list with dynamic fetching if necessary)
-    sources = ['Source A', 'Source B', 'Source C']  # Example sources
+    sources = ['web app', 'scheduled']  # Example sources
     selected_source = st.selectbox('Select Source of Prediction', sources)
 
     if start_date <= end_date:
