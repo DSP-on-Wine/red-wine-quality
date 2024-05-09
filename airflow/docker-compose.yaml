@@ -107,7 +107,7 @@ services:
     volumes:
       - ./great_expectations:/great_expectations
     command: ["sleep", "infinity"]
-    
+
   redis:
     image: redis:latest
     expose:
@@ -116,7 +116,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 30s
-      retries: 50 
+      retries: 50
       start_period: 30s
     restart: always
 
@@ -291,3 +291,4 @@ services:
 
 volumes:
   postgres-db-volume:
+    
