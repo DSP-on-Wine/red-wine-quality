@@ -30,9 +30,8 @@ def display_predictions(df, predictions):
 
 def predict_batch(df):
     if st.button('Predict for batch'):
-        predictions = batch_predict(df)
+        predictions = batch_predict(df, source="webapp")
         display_predictions(df, predictions) 
-        ## TODO - send df as input
 
 
 def display_training_data():
@@ -64,7 +63,7 @@ def predict_single():
             alcohol=alcohol,
             source=source
         )
-        prediction = predict(input_data.dict())
+        prediction = predict(input_data.dict(), source="webapp")
         st.sidebar.subheader('Prediction')
         st.sidebar.write(prediction)
 

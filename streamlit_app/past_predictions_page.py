@@ -16,10 +16,12 @@ def past_predictions_page():
     sources = ['web app', 'scheduled']  # Example sources
     selected_source = st.selectbox('Select Source of Prediction', sources)
 
+    sources = ["all", "webapp", "scheduled predictions"]
+    selected_source = st.selectbox("Select Source", sources)
+
     if start_date <= end_date:
         if st.button('Get Past Predictions'):
             past_predictions_data = get_predictions(start_date, end_date, selected_source)
-            ## TODO - send the source of the prediction specified in input
             if not isinstance(past_predictions_data, str):
                 st.subheader('Past Predictions')
                 st.dataframe(past_predictions_data)

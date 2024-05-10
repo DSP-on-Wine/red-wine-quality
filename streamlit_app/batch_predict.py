@@ -3,7 +3,7 @@ import requests
 from models import InputData
 
 
-def batch_predict(df: pd.DataFrame):
+def batch_predict(df: pd.DataFrame, source: str = "webapp"):
     predictions = []
     input_data_list = []
     ## TODO - add source field with source='webapp' by default
@@ -26,9 +26,11 @@ def batch_predict(df: pd.DataFrame):
         input_data_list.append(input_data)
 
     predict_endpoint = "http://localhost:8000/predict"
-    response = requests.post(predict_endpoint, json=[
-        data.dict()
-        for data in input_data_list])
+    response = requests.post(predict_endpoint, json={
+        "data": [data.dict() for data in input_data_list],
+        "source": source  # Send the source along with the data
+    })  
+
 
     if response.status_code == 200:
         predictions = response.json()
