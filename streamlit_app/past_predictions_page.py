@@ -12,9 +12,10 @@ def past_predictions_page():
     end_date = st.date_input('End Date', today)
     ## TODO - show drop down option of sources of prediction
     
-        # Define or fetch sources (replace this list with dynamic fetching if necessary)
-    sources = ['web app', 'scheduled']  # Example sources
-    selected_source = st.selectbox('Select Source of Prediction', sources)
+    # Define or fetch sources (replace this list with dynamic fetching if necessary)
+
+    # sources = ['web app', 'scheduled']  # Example sources
+    # selected_source = st.selectbox('Select Source of Prediction', sources)
 
     sources = ["all", "webapp", "scheduled predictions"]
     selected_source = st.selectbox("Select Source", sources)
