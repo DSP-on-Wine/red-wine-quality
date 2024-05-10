@@ -1,7 +1,6 @@
 import os
 import random
 import logging
-import json
 import pandas as pd
 from airflow.decorators import dag, task
 from datetime import datetime, timedelta
@@ -13,6 +12,7 @@ from great_expectations.dataset import PandasDataset
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
+project_config_path = '/opt/airflow/gx/great_expectations.yml'
 
 @dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
@@ -37,14 +37,18 @@ def ingest_wine_data():
             try:
                 # Read the CSV file using pandas
                 df = pd.read_csv(file_path)
+                
                 # Convert the pandas DataFrame to a Great Expectations Dataset
                 ge_dataset = PandasDataset(df)
+                
                 # Use Great Expectations to validate data
-                context = BaseDataContext()  # Initialize a base data context
-                suite = context.get_expectation_suite('expectation_suite.json')  # Load the expectation suite
+                context = ge.get_context()  # Get the Great Expectations context
+                suite = context.get_expectation_suite('/opt/airflow/dags/expectation_suite.json')  # Load the expectation suite
                 batch_kwargs = {'dataset': ge_dataset}  # Create the batch kwargs
                 batch = context.get_batch(batch_kwargs, suite)  # Create the batch using the batch kwargs
+                
                 results = batch.validate()  # Validate the batch
+                
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
                     logging.info("No data quality issues found. File moved to good_data directory.")
@@ -52,13 +56,14 @@ def ingest_wine_data():
                     logging.warning("Data quality issues found.")
                     for result in results['results']:
                         logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
+                    
                     validation_results = results  # Placeholder for the validation_results dictionary
                     return validation_results
             except Exception as e:
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
             logging.info("No file to validate.")
-            return {}  # Return an empty dictionary if no validation results are available
+            return {} # Return an empty dictionary if no validation results are available
 
     @task
     def move_file(file_path: str, destination_dir: str) -> None:
