@@ -24,7 +24,7 @@ def display_predictions(predictions):
 
 def predict_batch(df):
     if st.button('Predict for batch'):
-        predictions = batch_predict(df)
+        predictions = batch_predict(df, source="webapp")
         display_predictions(predictions)
 
 
@@ -53,7 +53,7 @@ def predict_single():
             sulphates=sulphates,
             alcohol=alcohol
         )
-        prediction = predict(input_data.dict())
+        prediction = predict(input_data.dict(), source="webapp")
         st.sidebar.subheader('Prediction')
         st.sidebar.write(prediction)
 

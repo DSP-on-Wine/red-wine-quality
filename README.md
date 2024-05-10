@@ -80,6 +80,11 @@ To set up the PostgreSQL database for the project, follow these steps:
          timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
      );
      ```
+   - Add a "source" column to the table:
+   
+   ```
+   ALTER TABLE predictions ADD COLUMN source VARCHAR(50);
+   ```
 
 5. **Create a `.env` file:**
 
