@@ -17,15 +17,21 @@ def upload_csv():
     return None
 
 
-def display_predictions(predictions):
+def display_predictions(df, predictions):
     st.subheader('Predictions')
-    st.write(predictions)
+    # Merge the predictions with the initial CSV input
+    if not df.empty and len(predictions) == len(df):
+        df['Prediction'] = predictions
+    st.write(df)
+    ## TODO - take inputs test data + predictions 
+    ## TODO - merge predictions with initial csv input for test, write whole df
+    ##st.write(predictions)
 
 
 def predict_batch(df):
     if st.button('Predict for batch'):
         predictions = batch_predict(df, source="webapp")
-        display_predictions(predictions)
+        display_predictions(df, predictions) 
 
 
 def display_training_data():
@@ -39,6 +45,9 @@ def predict_single():
         chlorides, free_sulfur_dioxide, total_sulfur_dioxide, density, \
         pH, sulphates, alcohol = add_sidebar()
 
+    # TODO - send the source of the prediction with source=webapp by default
+    # Add a source of prediction
+    source = st.sidebar.selectbox('Select Source', ['WebApp', 'Other'], index=0)
     if st.sidebar.button('Predict'):
         input_data = InputData(
             fixed_acidity=fixed_acidity,
@@ -51,7 +60,8 @@ def predict_single():
             density=density,
             pH=pH,
             sulphates=sulphates,
-            alcohol=alcohol
+            alcohol=alcohol,
+            source=source
         )
         prediction = predict(input_data.dict(), source="webapp")
         st.sidebar.subheader('Prediction')

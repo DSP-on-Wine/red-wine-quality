@@ -6,6 +6,7 @@ from models import InputData
 def batch_predict(df: pd.DataFrame, source: str = "webapp"):
     predictions = []
     input_data_list = []
+    ## TODO - add source field with source='webapp' by default
     for index, row in df.iterrows():
         input_data = InputData(
             fixed_acidity=row['fixed acidity'],
@@ -18,7 +19,8 @@ def batch_predict(df: pd.DataFrame, source: str = "webapp"):
             density=row['density'],
             pH=row['pH'],
             sulphates=row['sulphates'],
-            alcohol=row['alcohol']
+            alcohol=row['alcohol'], 
+            source='webapp'
         )
 
         input_data_list.append(input_data)
