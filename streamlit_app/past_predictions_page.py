@@ -14,6 +14,9 @@ def past_predictions_page():
     
     # Define or fetch sources (replace this list with dynamic fetching if necessary)
 
+    # sources = ['web app', 'scheduled']  # Example sources
+    # selected_source = st.selectbox('Select Source of Prediction', sources)
+
     sources = ["all", "webapp", "scheduled predictions"]
     selected_source = st.selectbox("Select Source", sources)
 

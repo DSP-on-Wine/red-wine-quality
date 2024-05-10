@@ -48,6 +48,7 @@ def predict_single():
     # TODO - send the source of the prediction with source=webapp by default
     # Add a source of prediction
     #source = st.sidebar.selectbox('Select Source', ['WebApp', 'Other'], index=0)
+    
     if st.sidebar.button('Predict'):
         input_data = InputData(
             fixed_acidity=fixed_acidity,
@@ -60,7 +61,8 @@ def predict_single():
             density=density,
             pH=pH,
             sulphates=sulphates,
-            alcohol=alcohol,
+            alcohol=alcohol
+
         )
         prediction = predict(input_data.dict(), source="webapp")
         st.sidebar.subheader('Prediction')
