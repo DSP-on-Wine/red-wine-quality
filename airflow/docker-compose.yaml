@@ -78,6 +78,7 @@ x-airflow-common:
     - ${RAW_DATA_DIR}:/opt/airflow/raw_data
     - ${GOOD_DATA_DIR}:/opt/airflow/good_data
     - ${BAD_DATA_DIR}:/opt/airflow/bad_data
+    - ${DATA_DIR}:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -101,13 +102,6 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-
-  great_expectations:
-    build:
-      context: ./great_expectations
-    volumes:
-      - ./great_expectations:/great_expectations
-    command: ["sleep", "infinity"]
 
   redis:
     image: redis:latest

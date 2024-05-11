@@ -1,2 +1,2 @@
-great_expectations
-pandas
+great_expectations==0.18.13
+pyspark==3.5.1
