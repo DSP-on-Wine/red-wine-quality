@@ -1,6 +1,8 @@
+import json
 import os
 import random
 import logging
+import shutil
 import pandas as pd
 from pyspark.sql import SparkSession
 from airflow.decorators import dag, task
@@ -16,6 +18,45 @@ GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
 PROJECT_CONFIG_PATH = '/opt/airflow/gx/great_expectations.yml'
 PROJECT_CONFIG_DIR = '/opt/airflow/gx'
+
+def parse_checkpoint_result(result):
+    parsed_result = {
+        "run_id": {
+            "run_name": result['validation_results']['run_id']['run_name'],
+            "run_time": result['validation_results']['run_id']['run_time']
+        },
+        "validation_results": {
+            "success": result['validation_results']['run_results']['ValidationResultIdentifier::expect_column_values_to_not_be_null/20240512-092615-my-run-name-template/20240512T092615.626882Z/my_spark_in_memory_datasource-data_chunk']['validation_result']['success'],
+            "statistics": result['validation_results']['run_results']['ValidationResultIdentifier::expect_column_values_to_not_be_null/20240512-092615-my-run-name-template/20240512T092615.626882Z/my_spark_in_memory_datasource-data_chunk']['validation_result']['statistics']
+        },
+        "actions_results": {
+            "store_validation_result": {
+                "class": result['validation_results']['run_results']['ValidationResultIdentifier::expect_column_values_to_not_be_null/20240512-092615-my-run-name-template/20240512T092615.626882Z/my_spark_in_memory_datasource-data_chunk']['actions_results']['store_validation_result']['class']
+            },
+            "update_data_docs": {
+                "local_site": result['validation_results']['run_results']['ValidationResultIdentifier::expect_column_values_to_not_be_null/20240512-092615-my-run-name-template/20240512T092615.626882Z/my_spark_in_memory_datasource-data_chunk']['actions_results']['update_data_docs']['local_site'],
+                "class": result['validation_results']['run_results']['ValidationResultIdentifier::expect_column_values_to_not_be_null/20240512-092615-my-run-name-template/20240512T092615.626882Z/my_spark_in_memory_datasource-data_chunk']['actions_results']['update_data_docs']['class']
+            }
+        },
+        "checkpoint_config": {
+            "name": result['validation_results']['checkpoint_config']['name'],
+            "expectation_suite_name": result['validation_results']['checkpoint_config']['expectation_suite_name'],
+            "action_list": result['validation_results']['checkpoint_config']['action_list']
+        },
+        "success": result['success']
+    }
+    return parsed_result
+
+def serialize_checkpoint_result(checkpoint_result):
+    # Extract relevant information from the CheckpointResult object
+    serialized_result = {
+        "run_id": checkpoint_result.get("run_id", {}),
+        "validation_results": checkpoint_result.get("validation_results", {}),
+        "actions_results": checkpoint_result.get("actions_results", {}),
+        "checkpoint_config": checkpoint_result.get("checkpoint_config", {}),
+        "success": checkpoint_result.success,
+    }
+    return serialized_result
 
 @dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
@@ -34,13 +75,13 @@ def ingest_wine_data():
             return None
 
     @task
-    def validate_and_split_data(file_path: str) -> dict:
+    def validate_and_split_data(file_path: str):
         if file_path:
             logging.info(f"Validating file {file_path}...")
             try:
                 context_root_dir = "/opt/airflow/great_expectations"
                 context = gx.get_context(context_root_dir=context_root_dir)
-                df = pd.read_csv(file_path)
+                dataframe = pd.read_csv(file_path)
 
                 spark = SparkSession.builder.getOrCreate()
                 dataframe_datasource = context.sources.add_or_update_spark(
@@ -84,12 +125,14 @@ def ingest_wine_data():
                 context.add_or_update_checkpoint(checkpoint=checkpoint)
                 checkpoint_result = checkpoint.run()
 
-                results = checkpoint_result
+                results = serialize_checkpoint_result(checkpoint_result)
+                good_data_json = dataframe.to_json()
+
 
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
                     logging.info("No data quality issues found. File moved to good_data directory.")
-                    return {"validation_results": results, "good_data": df}  # Return a dictionary with the validation results and the good data
+                    return {} 
                 else:
                     logging.warning("Data quality issues found.")
                     for result in results['results']:
@@ -100,20 +143,21 @@ def ingest_wine_data():
                     move_file(file_path, BAD_DATA_DIR)  # Move the file to the bad_data directory
 
                     logging.info("File split into good_data and bad_data directories.")
-                    return {"validation_results": results, "good_data": df, "bad_data": bad_data}  # Return a dictionary with the validation results, the good data, and the bad data
+                    return {"validation_results": results, "good_data": json.loads(good_data_json), "bad_data": bad_data}  # Return a dictionary with the validation results, the good data, and the bad data
             except Exception as e:
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
             logging.info("No file to validate.")
             return {}  # Return an empty dictionary if no validation results are available
 
-    @task
-    def move_file(file_path: str, destination_dir: str) -> None:
-        if not os.path.exists(destination_dir):
-            os.makedirs(destination_dir)
-        file_name = os.path.basename(file_path)
-        dest_path = os.path.join(destination_dir, file_name)
-        os.rename(file_path, dest_path)
+    def move_file(file_path: str, target_dir: str) -> None:
+        if os.path.exists(file_path):
+            file_name = os.path.basename(file_path)
+            target_path = os.path.join(target_dir, file_name)
+            shutil.move(file_path, target_path)
+            logging.info(f"Moved file {file_name} to {target_dir}.")
+        else:
+            logging.info(f"File {file_path} does not exist.")
 
     @task
     def split_and_save_data(file_path: str, validation_results: dict) -> None:
