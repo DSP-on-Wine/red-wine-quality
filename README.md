@@ -274,6 +274,82 @@ Before proceeding with the installation, ensure that you have the following prer
   docker-compose down --volumes --remove-orphans
   ```
 
+### Grafana Installation Guide (for macOS)
+
+This guide will help you set up grafana and connect it to `database in pgadmin tool` in a macOS
+
+This is the link for installation instructions in windows:
+
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/
+
+#### Install Grafana on macOS using Homebrew:
+
+1. **Open a terminal and run the following commands:**
+
+brew update
+brew install grafana
+
+2. **To start Grafana, run the following command:**
+
+brew services start grafana
+
+3. **To open Grafana, copy past this url in a browser:**
+
+http://localhost:3000/
+
+username: admin
+Password: admin 
+
+you will be re-directed to create a new password 
+
+4. **Configure your first data source:**
+
+In the grafana interface click on `Add  your first data source` and choose a data source type for our case it's `Type: PostgreSQL`
+
+ Then fill the fields:
+
+ Name: name to choose for the data source 
+
+#### Connection:
+Host URL: localhost:5432
+Database name: wine_quality
+
+#### Authentication: 
+
+It's the same as in pgadmin:
+username: postgres
+password: dependes on what did you put when creating the server database of wine_quality
+
+==> Click and save ( You should have a pop up text saying connection ok)
+
+5. **Create your first dashboard:**
+
+To start your new dashboard by adding a visualization: 
+
+### Prerequisites:
+
+Run the fastAPI server 
+Run the Streamlit App
+Make sure you have values in the table in pgadmin
+
+Then you click on add visualization:
+
+1- Select a data source that you already created in the previous step
+2- Go to code and put your query: for our first test to create `Histogram of Predictions `
+
+
+```ini
+SELECT
+   prediction,
+   COUNT(*) as frequency
+FROM predictions
+WHERE timestamp >= NOW() - INTERVAL '1 day'
+GROUP BY prediction
+ORDER BY prediction;
+```
+
+
+
 ## Contributors
 
 ### The Data Vintners
