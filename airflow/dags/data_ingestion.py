@@ -38,8 +38,9 @@ def ingest_wine_data():
         if file_path:
             logging.info(f"Validating file {file_path}...")
             try:
-                context_root_dir = "/dbfs/great_expectations/"
-                context = gx.get_context()
+                context_root_dir = "/opt/airflow/great_expectations"
+                context = gx.get_context(context_root_dir=context_root_dir)
+                df = pd.read_csv(file_path)
 
                 spark = SparkSession.builder.getOrCreate()
                 dataframe_datasource = context.sources.add_or_update_spark(
@@ -82,12 +83,6 @@ def ingest_wine_data():
                 )
                 context.add_or_update_checkpoint(checkpoint=checkpoint)
                 checkpoint_result = checkpoint.run()
-
-
-
-
-
-
 
                 results = checkpoint_result
 
