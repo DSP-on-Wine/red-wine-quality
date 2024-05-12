@@ -11,6 +11,9 @@ USER airflow
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 USER airflow
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+USER airflow
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 WORKDIR /opt/airflow
