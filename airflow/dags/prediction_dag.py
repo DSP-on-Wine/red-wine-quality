@@ -14,7 +14,12 @@ from sqlalchemy.orm import sessionmaker
 # try to make it select multiple files at once
 # try to make it scheduled and run every 2 minutes
 # send the source as scheduled once up to date with dev
-# update README
+# update README add the below to create new table:
+"""
+CREATE TABLE IF NOT EXISTS old_files (
+    id SERIAL PRIMARY KEY,
+    filename VARCHAR(255) UNIQUE);
+"""
 
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 
