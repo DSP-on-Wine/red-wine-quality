@@ -28,6 +28,7 @@ def wine_prediction_dag():
 
     @task
     def check_for_new_data() -> list:
+        ## Need to modify the logic to check for actual new files
         good_data_files = os.listdir(GOOD_DATA_DIR)
         if good_data_files:
             logging.info("New ingested files found in good_data directory.")
