@@ -91,8 +91,12 @@ def ingest_wine_data():
                     return {}
                 else:
                     logging.warning("Data quality issues found.")
-                    run_results = results.get("run_results", {})
-                    validation_result = (x.get('validation_result', {}) for x in run_results.values())
+                    # run_results = results.get("run_results", {})
+                    # validation_result = (x.get('validation_result', {}) for x in run_results.values())
+                    validation_result = {}
+                    for result in results['run_results'].values():
+                        validation_result = result['validation_result']
+                    
                     for result in validation_result['results']:
                         logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
 
