@@ -52,21 +52,12 @@ def ingest_wine_data():
                 )
 
                 batch_request = dataframe_asset.build_batch_request()
-
-                expectation_suite_name = "expect_column_values_to_not_be_null"
-                context.add_or_update_expectation_suite(expectation_suite_name=expectation_suite_name)
+                suite = context.get_expectation_suite(expectation_suite_name='wine_expectation_suite')
                 
                 validator = context.get_validator(
                     batch_request=batch_request,
-                    expectation_suite_name=expectation_suite_name,
+                    expectation_suite = suite
                 )
-
-                #HERE
-                validator.expect_column_values_to_not_be_null(column="quality")
-                validator.expect_column_values_to_be_between(
-                    column="fixed acidity", min_value=30, max_value=40, include_unexpected_rows=True
-                )
-
 
                 my_checkpoint_name = "my_databricks_checkpoint"
 
@@ -93,36 +84,43 @@ def ingest_wine_data():
 
                 results = checkpoint_result
                 logging.info(results)
+
                 validation_result = {
                     "file_path": file_path,
                     "data_issues": []
                 }
+
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
                     logging.info("No data quality issues found. File moved to good_data directory.")
-                    # return [checkpoint_result, "good_data", good_data_json]
                     
                     return validation_result
                 else:
                     logging.warning("Data quality issues found.")
-                    # run_results = results.get("run_results", {})
-                    # validation_result = (x.get('validation_result', {}) for x in run_results.values())
                     returned_result = {}
+
                     for result in results['run_results'].values():
                         returned_result = result['validation_result']
                     
                     for result in returned_result['results']:
-                        logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
-                        if (result['result']['unexpected_percent'] == 100.0):
-                            move_file(file_path, BAD_DATA_DIR)                        
-                        else : 
-                            validation_result['data_issues'].append({
-                                'column': result['expectation_config']['kwargs']['column'],
-                                'result': result['result']
-                            })
-                        # return validation_result
-                    logging.info("File moved to bad_data directory.")
-                    # return [checkpoint_result, "bad_data", bad_data]
+                        logging.info(f'Expected count was: {result['result']}')
+                        if result['result']['unexpected_count'] != 0:
+                            logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
+                        
+                            # Check if all rows are bad
+                            if (result['result']['unexpected_percent'] == 100.0):
+                                logging.info("Found all rows bad.")
+                                move_file(file_path, BAD_DATA_DIR)                        
+                            else : 
+                                # return to split
+                                validation_result['data_issues'].append({
+                                    'column': result['expectation_config']['kwargs']['column'],
+                                    'expectation': result['expectation_config']['expectation_type'],
+                                    'result': result['result']
+                                })
+
+                    logging.info(f"Found values with data issues, returned:\n{validation_result}.")
+
                     return validation_result
             except Exception as e:
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
@@ -141,19 +139,38 @@ def ingest_wine_data():
 
     @task
     def split_and_save_data(file_path: str, validation_task) -> None:
-        validation_results, type_of_data, data = validation_task[:-1]
+        if validation_task['data_issues']:
+            bad_rows = []
+            data_issues = validation_task['data_issues']
+            for issue in data_issues:
+                indices = issue['result']['partial_unexpected_index_list']
+                logging.info(f"Validation results: {issue['result']}")
+                for i in indices:
+                    bad_rows.append(int(i['index']))
 
-        logging.info(f"Splitting and saving data for file: {file_path}")
-        logging.info(f"Validation results: {validation_results['run_results']}")
+            logging.info(f"Splitting and saving data for file: {file_path}")
+            logging.info(f"Bad index results: {bad_rows}")
 
-        if type_of_data == 'bad_data':
-            bad_data = data
-            save_split_data(file_path, bad_data, BAD_DATA_DIR)  # Save the bad data to a file in the bad_data directory
-            logging.info("Bad data saved to bad_data directory.")
+            df = pd.read_csv(file_path)
+            good_df = df.loc[~df['index'].isin(bad_rows)]
+            bad_df = df.loc[df['index'].isin(bad_rows)]
+
+            file_name = os.path.basename(file_path).split('.')[0]
+
+            good_file = f'{file_name + "_good"}.csv'
+            bad_file = f'{file_name + "_bad"}.csv'
+            
+            good_df.to_csv(f'good_data/{good_file}')
+            logging.info(f"File split {good_file} created in good_data.")
+            bad_df.to_csv(f'bad_data/{bad_file}')
+            logging.info(f"File split {bad_file} created in bad_data.")
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logging.info(f"The file {file_path} has been deleted.")
+
         else:
-            good_data = validation_results['good_data']
-            save_split_data(file_path, good_data, GOOD_DATA_DIR)  # Save the good data to a file in the good_data directory
-            logging.info("Data saved to good_data directory.")
+            logging.info(f"No data issues found for file {file_path}")
 
     @task
     def save_split_data(original_file: str, data: pd.DataFrame, destination_dir: str) -> None:
