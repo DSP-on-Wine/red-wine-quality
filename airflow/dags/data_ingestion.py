@@ -9,7 +9,6 @@ from airflow.decorators import dag, task
 from datetime import datetime, timedelta
 import great_expectations as gx
 from great_expectations.checkpoint import Checkpoint
-from great_expectations.checkpoint.types.checkpoint_result import CheckpointResult
 
 
 RAW_DATA_DIR = '/opt/airflow/raw_data'
@@ -33,7 +32,7 @@ def ingest_wine_data():
             return None
 
     @task
-    def validate_and_split_data(file_path: str):
+    def validate_data(file_path: str):
         if file_path:
             logging.info(f"Validating file {file_path}...")
             try:
@@ -61,7 +60,13 @@ def ingest_wine_data():
                     batch_request=batch_request,
                     expectation_suite_name=expectation_suite_name,
                 )
+
+                #HERE
                 validator.expect_column_values_to_not_be_null(column="quality")
+                validator.expect_column_values_to_be_between(
+                    column="fixed acidity", min_value=30, max_value=40, include_unexpected_rows=True
+                )
+
 
                 my_checkpoint_name = "my_databricks_checkpoint"
 
@@ -79,38 +84,46 @@ def ingest_wine_data():
                     ],
                 )
                 context.add_or_update_checkpoint(checkpoint=checkpoint)
-                checkpoint_result = checkpoint.run()
+                result_format: dict = {
+                    "result_format": "COMPLETE",
+                    "unexpected_index_column_names": ["index"],
+                    "return_unexpected_index_query": True,
+                }
+                checkpoint_result = checkpoint.run(result_format=result_format)
 
                 results = checkpoint_result
                 logging.info(results)
-
+                validation_result = {
+                    "file_path": file_path,
+                    "data_issues": []
+                }
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
                     logging.info("No data quality issues found. File moved to good_data directory.")
                     # return [checkpoint_result, "good_data", good_data_json]
-                    return {}
+                    
+                    return validation_result
                 else:
                     logging.warning("Data quality issues found.")
                     # run_results = results.get("run_results", {})
                     # validation_result = (x.get('validation_result', {}) for x in run_results.values())
-                    validation_result = {}
+                    returned_result = {}
                     for result in results['run_results'].values():
-                        validation_result = result['validation_result']
+                        returned_result = result['validation_result']
                     
-                    for result in validation_result['results']:
+                    for result in returned_result['results']:
                         logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
-
-                    move_file(file_path, BAD_DATA_DIR)  # Move the file to the bad_data directory
-                    #########
-                    #########
-                    ######### TODO - maybe don't move? move in save and split, and the save and split
-                    ######### should move it as it is if it is good, move it to bad if it is bad, then 
-                    ######### another function that splits the rows (might have to be done manually)
-                    #########
-                    #########
+                        if (result['result']['unexpected_percent'] == 100.0):
+                            move_file(file_path, BAD_DATA_DIR)                        
+                        else : 
+                            validation_result['data_issues'].append({
+                                'column': result['expectation_config']['kwargs']['column'],
+                                'result': result['result']
+                            })
+                        # return validation_result
                     logging.info("File moved to bad_data directory.")
                     # return [checkpoint_result, "bad_data", bad_data]
-                    return {}
+                    return validation_result
             except Exception as e:
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
@@ -162,9 +175,9 @@ def ingest_wine_data():
         pass
 
     read_task = read_data()
-    validate_and_split_task = validate_and_split_data(read_task)
-    split_and_save_task = split_and_save_data(read_task, validate_and_split_task)
-    # send_alerts_task = send_alerts(read_task, validate_and_split_task)
-    # save_data_errors_task = save_data_errors(validate_and_split_task)
+    validate_task = validate_data(read_task)
+    split_and_save_task = split_and_save_data(read_task, validate_task)
+    send_alerts_task = send_alerts(read_task, validate_task)
+    save_data_errors_task = save_data_errors(validate_task)
 
 ingest_wine_data_dag = ingest_wine_data()
