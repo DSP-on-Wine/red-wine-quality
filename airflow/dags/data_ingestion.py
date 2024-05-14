@@ -9,11 +9,43 @@ from airflow.decorators import dag, task
 from datetime import datetime, timedelta
 import great_expectations as gx
 from great_expectations.checkpoint import Checkpoint
-
+import sqlalchemy as db
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import asyncpg
+import asyncio
 
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
+
+# Define SQLAlchemy model
+Base = declarative_base()
+
+class DataError(Base):
+    __tablename__ = 'data_errors'
+
+    id = db.Column(db.Integer, primary_key=True)
+    file_name = db.Column(db.String)
+    column_name = db.Column(db.String)
+    expectation = db.Column(db.String)
+    element_count = db.Column(db.Integer)
+    unexpected_count = db.Column(db.Integer)
+    unexpected_percent = db.Column(db.Float)
+    missing_count = db.Column(db.Integer)
+    missing_percent = db.Column(db.Float)
+    unexpected_percent_total = db.Column(db.Float)
+    unexpected_percent_nonmissing = db.Column(db.Float)
+    unexpected_index_query = db.Column(db.String)
+
+class UnexpectedIndex(Base):
+    __tablename__ = 'unexpected_indices'
+
+    id = db.Column(db.Integer, primary_key=True)
+    data_error_id = db.Column(db.Integer, db.ForeignKey('data_errors.id'))
+    index = db.Column(db.String)
+    value = db.Column(db.String)
+
 
 @dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
@@ -159,7 +191,7 @@ def ingest_wine_data():
 
             good_file = f'{file_name + "_good"}.csv'
             bad_file = f'{file_name + "_bad"}.csv'
-            
+
             good_df.to_csv(f'good_data/{good_file}')
             logging.info(f"File split {good_file} created in good_data.")
             bad_df.to_csv(f'bad_data/{bad_file}')
@@ -172,12 +204,63 @@ def ingest_wine_data():
         else:
             logging.info(f"No data issues found for file {file_path}")
 
-    @task
-    def save_split_data(original_file: str, data: pd.DataFrame, destination_dir: str) -> None:
-        file_name = os.path.basename(original_file)
-        split_file_name = f"split_{file_name}"
-        dest_path = os.path.join(destination_dir, split_file_name)
-        data.to_csv(dest_path, index=False)
+    def extract_values(data):
+        file_path = data.get('file_path')
+        data_issues = data.get('data_issues', [])
+
+        data_errors = []
+        
+        for issue in data_issues:
+            
+            data_error_entry = {
+                'file_name': file_path,
+                'column_name': issue['column'],
+                'expectation': issue['expectation'],
+                'element_count': issue['result']['element_count'],
+                'unexpected_count': issue['result']['unexpected_count'],
+                'unexpected_percent': issue['result']['unexpected_percent'],
+                'missing_count': issue['result']['missing_count'],
+                'missing_percent': issue['result']['missing_percent'],
+                'unexpected_percent_total': issue['result']['unexpected_percent_total'],
+                'unexpected_percent_nonmissing': issue['result']['unexpected_percent_nonmissing'],
+                'unexpected_index_query': issue['result']['unexpected_index_query']
+            }
+            unexpected_indices = []
+            
+            for index_data in issue['result']['unexpected_index_list']:
+                unexpected_index_entry = {
+                    'index': index_data['index'],
+                    'value': index_data[issue['column']]
+                }
+                unexpected_indices.append(unexpected_index_entry)
+
+            data_errors.append([data_error_entry, unexpected_indices])
+        return data_errors
+        
+    # Define function to insert data into database
+    def insert_data_to_database(data_errors, session):
+        try:
+            for error_entry in data_errors:
+                print("Inserting data error:", error_entry)
+                data_error = DataError(**error_entry[0])
+                session.add(data_error)
+                session.commit()
+                
+                # Retrieve the ID of the inserted row
+                data_error_id = data_error.id
+                
+                # Update data_error_id in unexpected indices
+                for index_entry in error_entry[1]:
+                    index_entry['data_error_id'] = data_error_id
+                    print("Inserting unexpected index:", index_entry)
+                    unexpected_index = UnexpectedIndex(**index_entry)
+                    session.add(unexpected_index)
+                    session.commit()
+        
+            print("Values inserted successfully.")
+        except Exception as e:
+            print("Error inserting values:", e)
+
 
     @task
     def send_alerts(file_path: str, validation_results: dict) -> None:
@@ -188,13 +271,22 @@ def ingest_wine_data():
 
     @task
     def save_data_errors(validation_results: dict) -> None:
-        # Save data problems along with data criticality to the database
-        pass
+        try:
+            # Create SQLAlchemy engine
+            engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
+            Session = sessionmaker(bind=engine)
+            
+            # Extracted values from extract_values function
+            data_errors = extract_values(validation_results)
+            session = Session()
+            insert_data_to_database(data_errors, session)
+        except Exception as e:
+            print("Error:", e)
 
     read_task = read_data()
     validate_task = validate_data(read_task)
     split_and_save_task = split_and_save_data(read_task, validate_task)
-    send_alerts_task = send_alerts(read_task, validate_task)
+    # send_alerts_task = send_alerts(read_task, validate_task)
     save_data_errors_task = save_data_errors(validate_task)
 
 ingest_wine_data_dag = ingest_wine_data()
