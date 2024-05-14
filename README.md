@@ -16,6 +16,8 @@ The goal of this project is to develop a machine learning model that accurately 
 - PostgreSQL (relational database management system)
 - Grafana (open-source analytics and monitoring platform)
 - Apache Airflow (workflow management platform)
+- Great Expectations
+- Docker for Windows Systems
 
 ## Installation
 
