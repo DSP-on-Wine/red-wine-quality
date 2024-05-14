@@ -47,7 +47,7 @@ class UnexpectedIndex(Base):
     value = db.Column(db.String)
 
 
-@dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
+@dag(schedule_interval=timedelta(seconds=60), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
 
     @task
