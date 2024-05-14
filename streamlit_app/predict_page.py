@@ -17,21 +17,16 @@ def upload_csv():
     return None
 
 
-def display_predictions(df, predictions):
+def display_predictions(predictions_df):
     st.subheader('Predictions')
-    # Merge the predictions with the initial CSV input
-    if not df.empty and len(predictions) == len(df):
-        df['Prediction'] = predictions
-    st.write(df)
-    ## TODO - take inputs test data + predictions 
-    ## TODO - merge predictions with initial csv input for test, write whole df
-    ##st.write(predictions)
+    st.write(predictions_df)
 
 
 def predict_batch(df):
     if st.button('Predict for batch'):
-        predictions = batch_predict(df, source="webapp")
-        display_predictions(df, predictions) 
+        predictions_df = batch_predict(df, source="webapp")
+        #predictions = batch_predict(df, source="webapp")
+        display_predictions(predictions_df) 
 
 
 def display_training_data():

@@ -12,14 +12,7 @@ from sqlalchemy.orm import sessionmaker
 ## TODO:
 # see how to read DB info from .env file
 # try to make it select multiple files at once
-# try to make it scheduled and run every 2 minutes
-# send the source as scheduled once up to date with dev
-# update README add the below to create new table:
-"""
-CREATE TABLE IF NOT EXISTS old_files (
-    id SERIAL PRIMARY KEY,
-    filename VARCHAR(255) UNIQUE);
-"""
+
 
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 
@@ -54,7 +47,7 @@ class InputData(BaseModel):
     sulphates: float
     alcohol: float
 
-@dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
+@dag(schedule_interval=timedelta(seconds=150), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def wine_prediction_dag():
 
     @task
@@ -75,6 +68,7 @@ def wine_prediction_dag():
 
     @task
     def make_predictions(files: list):
+        output_list = []  # Accumulate output for all files
         if files:
             session = Session()
             try:
@@ -98,12 +92,14 @@ def wine_prediction_dag():
                             sulphates=row['sulphates'],
                             alcohol=row['alcohol']
                         )
-
                         input_data_list.append(input_data)
+
+                    source = 'scheduled predictions'
                     predict_endpoint = "http://host.docker.internal:8000/predict/"
-                    response = requests.post(predict_endpoint, json=[
-                        data.dict()
-                        for data in input_data_list])
+                    response = requests.post(predict_endpoint, json={
+                        "data": [data.dict() for data in input_data_list],
+                        "source": source  # Send the source along with the data
+                        })
 
                     if response.status_code == 200:
                         predictions = response.json()
@@ -114,9 +110,15 @@ def wine_prediction_dag():
                         session.add(OldFile(filename=file))
                         session.commit()
 
-                        return output
+                        output_list.append(output)  # Append output for this file
                     else:
-                        return f"Error: {response.text}"
+                        output_list.append(f"Error: {response.text}")
+            
+            except Exception as e:
+            # Log the exception and append error message to output list
+                logging.error(f"Error making predictions: {e}")
+                output_list.append(f"Error making predictions: {e}")
+
             finally:
                 session.close()
         else:
