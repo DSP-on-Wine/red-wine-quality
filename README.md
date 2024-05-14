@@ -105,6 +105,9 @@ To set up the PostgreSQL database for the project, follow these steps:
        value TEXT
      );
 
+     CREATE TABLE IF NOT EXISTS old_files (
+       id SERIAL PRIMARY KEY,
+       filename VARCHAR(255) UNIQUE);
 
      ```
 
