@@ -58,7 +58,7 @@ To set up the PostgreSQL database for the project, follow these steps:
    - Name the database: `wine_quality`.
    - Save the settings.
 
-4. **Create Predictions Table:**
+4. **Create Tables:**
 
    - Open the query tool and execute the following script to create the predictions table:
 
@@ -77,14 +77,34 @@ To set up the PostgreSQL database for the project, follow these steps:
          sulphates FLOAT,
          alcohol FLOAT,
          prediction FLOAT,
-         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         source VARCHAR(50);
      );
+     
+     CREATE TABLE IF NOT EXISTS data_errors (
+          id SERIAL PRIMARY KEY,
+          file_name VARCHAR,
+          column_name VARCHAR,
+          expectation VARCHAR,
+          element_count INTEGER,
+          unexpected_count INTEGER,
+          unexpected_percent FLOAT,
+          missing_count INTEGER,
+          missing_percent FLOAT,
+          unexpected_percent_total FLOAT,
+          unexpected_percent_nonmissing FLOAT,
+          unexpected_index_query VARCHAR,
+          
+      );
+      
+      CREATE TABLE IF NOT EXISTS unexpected_indices (
+          id SERIAL PRIMARY KEY,
+          data_error_id INTEGER REFERENCES data_errors(id),
+          index VARCHAR,
+          value VARCHAR
+      );
+
      ```
-   - Add a "source" column to the table:
-   
-   ```
-   ALTER TABLE predictions ADD COLUMN source VARCHAR(50);
-   ```
 
 5. **Create a `.env` file:**
 
@@ -227,7 +247,7 @@ Before proceeding with the installation, ensure that you have the following prer
 2. **Create necessary directories:**
 
    ```bash
-   mkdir logs, plugins, config
+   mkdir logs, plugins, config, great_expectations
    ```
 
 3. **Add paths in .env file:**
@@ -235,28 +255,33 @@ Before proceeding with the installation, ensure that you have the following prer
    - Within the airflow folder, generate a `.env` file and specify the following directories.
 
    ```bash
-   AIRFLOW_IMAGE_NAME=apache/airflow:2.8.4
+   AIRFLOW_IMAGE_NAME=apache/airflow:2.9.1
    AIRFLOW_UID=50000
    RAW_DATA_DIR = '../raw_data'
    GOOD_DATA_DIR = '../good_data'
+   BAD_DATA_DIR = '../bad_data'
    ```
 
    Note that this `.env` file is distinct from the one you created in the root directory, which contains database connection information.
 
-   - Ensure you've previously created the `raw_data` and `good_data` folders during the data preparation phase. If these folders or the files within `raw_data` are not present locally, refer to the **Data Preparation** section above.
+   - Ensure you've previously created the `raw_data`, `bad_data` and `good_data` folders during the data preparation phase. If these folders or the files within `raw_data` are not present locally, refer to the **Data Preparation** section above.
 
    - RAW_DATA_DIR and GOOD_DATA_DIR should specify the paths of the raw_data and good_data folders in your directory.
    - AIRFLOW_IMAGE_NAME and AIRFLOW_UID refer to default values used by docker.
 
 4. **Start Airflow using Docker Compose:**
-
+   For the first run, use the following command to build and run the airflow docker.
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
+   ```
+   After `--build` once, you can rerun the docker with simply entering into your terminal:
+   ```bash
+   dockercompose up -d
    ```
 
-5. **Make sure docker is enabled in the windows firewall.**
+6. **Make sure docker is enabled in the windows firewall.**
 
-6. **Access Airflow web interface:**
+7. **Access Airflow web interface:**
    - Once the services are up and running, you can access the Airflow web interface at [http://localhost:8080](http://localhost:8080).
    - Use the following credentials to log in:
      - **Username:** airflow
