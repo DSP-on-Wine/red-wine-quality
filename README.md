@@ -83,28 +83,28 @@ To set up the PostgreSQL database for the project, follow these steps:
          source VARCHAR(50);
      );
      
-     CREATE TABLE IF NOT EXISTS data_errors (
-          id SERIAL PRIMARY KEY,
-          file_name VARCHAR,
-          column_name VARCHAR,
-          expectation VARCHAR,
-          element_count INTEGER,
-          unexpected_count INTEGER,
-          unexpected_percent FLOAT,
-          missing_count INTEGER,
-          missing_percent FLOAT,
-          unexpected_percent_total FLOAT,
-          unexpected_percent_nonmissing FLOAT,
-          unexpected_index_query VARCHAR,
-          
+      CREATE TABLE data_errors (
+        id SERIAL PRIMARY KEY,
+        file_name TEXT,
+        column_name TEXT,
+        expectation TEXT,
+        element_count INTEGER,
+        unexpected_count INTEGER,
+        unexpected_percent DOUBLE PRECISION,
+        missing_count INTEGER,
+        missing_percent DOUBLE PRECISION,
+        unexpected_percent_total DOUBLE PRECISION,
+        unexpected_percent_nonmissing DOUBLE PRECISION,
+        unexpected_index_query TEXT
       );
-      
-      CREATE TABLE IF NOT EXISTS unexpected_indices (
-          id SERIAL PRIMARY KEY,
-          data_error_id INTEGER REFERENCES data_errors(id),
-          index VARCHAR,
-          value VARCHAR
-      );
+   
+     CREATE TABLE unexpected_indices (
+       id SERIAL PRIMARY KEY,
+       data_error_id INTEGER REFERENCES data_errors(id),
+       index TEXT,
+       value TEXT
+     );
+
 
      ```
 
