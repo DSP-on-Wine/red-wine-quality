@@ -16,6 +16,8 @@ The goal of this project is to develop a machine learning model that accurately 
 - PostgreSQL (relational database management system)
 - Grafana (open-source analytics and monitoring platform)
 - Apache Airflow (workflow management platform)
+- Great Expectations
+- Docker for Windows Systems
 
 ## Installation
 
@@ -58,7 +60,7 @@ To set up the PostgreSQL database for the project, follow these steps:
    - Name the database: `wine_quality`.
    - Save the settings.
 
-4. **Create Predictions Table:**
+4. **Create Tables:**
 
    - Open the query tool and execute the following script to create the predictions table:
 
@@ -77,8 +79,33 @@ To set up the PostgreSQL database for the project, follow these steps:
          sulphates FLOAT,
          alcohol FLOAT,
          prediction FLOAT,
-         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         source VARCHAR(50);
      );
+     
+      CREATE TABLE data_errors (
+        id SERIAL PRIMARY KEY,
+        file_name TEXT,
+        column_name TEXT,
+        expectation TEXT,
+        element_count INTEGER,
+        unexpected_count INTEGER,
+        unexpected_percent DOUBLE PRECISION,
+        missing_count INTEGER,
+        missing_percent DOUBLE PRECISION,
+        unexpected_percent_total DOUBLE PRECISION,
+        unexpected_percent_nonmissing DOUBLE PRECISION,
+        unexpected_index_query TEXT
+      );
+   
+     CREATE TABLE unexpected_indices (
+       id SERIAL PRIMARY KEY,
+       data_error_id INTEGER REFERENCES data_errors(id),
+       index TEXT,
+       value TEXT
+     );
+
+
      ```
 
 5. **Create a `.env` file:**
@@ -222,7 +249,7 @@ Before proceeding with the installation, ensure that you have the following prer
 2. **Create necessary directories:**
 
    ```bash
-   mkdir logs, plugins, config
+   mkdir logs, plugins, config, great_expectations
    ```
 
 3. **Add paths in .env file:**
@@ -230,28 +257,33 @@ Before proceeding with the installation, ensure that you have the following prer
    - Within the airflow folder, generate a `.env` file and specify the following directories.
 
    ```bash
-   AIRFLOW_IMAGE_NAME=apache/airflow:2.8.4
+   AIRFLOW_IMAGE_NAME=apache/airflow:2.9.1
    AIRFLOW_UID=50000
    RAW_DATA_DIR = '../raw_data'
    GOOD_DATA_DIR = '../good_data'
+   BAD_DATA_DIR = '../bad_data'
    ```
 
    Note that this `.env` file is distinct from the one you created in the root directory, which contains database connection information.
 
-   - Ensure you've previously created the `raw_data` and `good_data` folders during the data preparation phase. If these folders or the files within `raw_data` are not present locally, refer to the **Data Preparation** section above.
+   - Ensure you've previously created the `raw_data`, `bad_data` and `good_data` folders during the data preparation phase. If these folders or the files within `raw_data` are not present locally, refer to the **Data Preparation** section above.
 
    - RAW_DATA_DIR and GOOD_DATA_DIR should specify the paths of the raw_data and good_data folders in your directory.
    - AIRFLOW_IMAGE_NAME and AIRFLOW_UID refer to default values used by docker.
 
 4. **Start Airflow using Docker Compose:**
-
+   For the first run, use the following command to build and run the airflow docker.
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
+   ```
+   After `--build` once, you can rerun the docker with simply entering into your terminal:
+   ```bash
+   dockercompose up -d
    ```
 
-5. **Make sure docker is enabled in the windows firewall.**
+6. **Make sure docker is enabled in the windows firewall.**
 
-6. **Access Airflow web interface:**
+7. **Access Airflow web interface:**
    - Once the services are up and running, you can access the Airflow web interface at [http://localhost:8080](http://localhost:8080).
    - Use the following credentials to log in:
      - **Username:** airflow
@@ -268,6 +300,82 @@ Before proceeding with the installation, ensure that you have the following prer
   ```bash
   docker-compose down --volumes --remove-orphans
   ```
+
+### Grafana Installation Guide (for macOS)
+
+This guide will help you set up grafana and connect it to `database in pgadmin tool` in a macOS
+
+This is the link for installation instructions in windows:
+
+https://grafana.com/docs/grafana/latest/setup-grafana/installation/
+
+#### Install Grafana on macOS using Homebrew:
+
+1. **Open a terminal and run the following commands:**
+
+brew update
+brew install grafana
+
+2. **To start Grafana, run the following command:**
+
+brew services start grafana
+
+3. **To open Grafana, copy past this url in a browser:**
+
+http://localhost:3000/
+
+username: admin
+Password: admin 
+
+you will be re-directed to create a new password 
+
+4. **Configure your first data source:**
+
+In the grafana interface click on `Add  your first data source` and choose a data source type for our case it's `Type: PostgreSQL`
+
+ Then fill the fields:
+
+ Name: name to choose for the data source 
+
+#### Connection:
+Host URL: localhost:5432
+Database name: wine_quality
+
+#### Authentication: 
+
+It's the same as in pgadmin:
+username: postgres
+password: dependes on what did you put when creating the server database of wine_quality
+
+==> Click and save ( You should have a pop up text saying connection ok)
+
+5. **Create your first dashboard:**
+
+To start your new dashboard by adding a visualization: 
+
+### Prerequisites:
+
+Run the fastAPI server 
+Run the Streamlit App
+Make sure you have values in the table in pgadmin
+
+Then you click on add visualization:
+
+1- Select a data source that you already created in the previous step
+2- Go to code and put your query: for our first test to create `Histogram of Predictions `
+
+
+```ini
+SELECT
+   prediction,
+   COUNT(*) as frequency
+FROM predictions
+WHERE timestamp >= NOW() - INTERVAL '1 day'
+GROUP BY prediction
+ORDER BY prediction;
+```
+
+
 
 ## Contributors
 

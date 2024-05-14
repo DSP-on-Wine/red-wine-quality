@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 
+## TODO - should source be add here? decide after fastapi fixes
 class InputData(BaseModel):
     fixed_acidity: float
     volatile_acidity: float

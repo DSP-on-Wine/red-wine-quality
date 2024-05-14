@@ -47,6 +47,7 @@ class UnexpectedIndex(Base):
     value = db.Column(db.String)
 
 
+
 @dag(schedule_interval=timedelta(seconds=120), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
 
@@ -237,6 +238,8 @@ def ingest_wine_data():
             data_errors.append([data_error_entry, unexpected_indices])
         return data_errors
         
+
+
     def insert_data_to_database(data_errors, session):
         try:
             for error_entry in data_errors:
