@@ -1,4 +1,3 @@
-import json
 import os
 import random
 import logging
@@ -12,8 +11,6 @@ from great_expectations.checkpoint import Checkpoint
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import asyncpg
-import asyncio
 
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
@@ -21,6 +18,7 @@ BAD_DATA_DIR = '/opt/airflow/bad_data'
 
 # Define SQLAlchemy model
 Base = declarative_base()
+
 
 class DataError(Base):
     __tablename__ = 'data_errors'
@@ -38,6 +36,7 @@ class DataError(Base):
     unexpected_percent_nonmissing = db.Column(db.Float)
     unexpected_index_query = db.Column(db.String)
 
+
 class UnexpectedIndex(Base):
     __tablename__ = 'unexpected_indices'
 
@@ -47,8 +46,12 @@ class UnexpectedIndex(Base):
     value = db.Column(db.String)
 
 
-
-@dag(schedule_interval=timedelta(seconds=120), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
+@dag(
+        schedule_interval=timedelta(seconds=120),
+        start_date=datetime(2024, 5, 9),
+        catchup=False,
+        tags=['data_ingestion']
+)
 def ingest_wine_data():
 
     @task
@@ -85,11 +88,13 @@ def ingest_wine_data():
                 )
 
                 batch_request = dataframe_asset.build_batch_request()
-                suite = context.get_expectation_suite(expectation_suite_name='wine_expectation_suite')
-                
+                suite = context.get_expectation_suite(
+                    expectation_suite_name='wine_expectation_suite'
+                    )
+
                 validator = context.get_validator(
                     batch_request=batch_request,
-                    expectation_suite = suite
+                    expectation_suite=suite
                 )
 
                 my_checkpoint_name = "my_databricks_checkpoint"
@@ -102,9 +107,13 @@ def ingest_wine_data():
                     action_list=[
                         {
                             "name": "store_validation_result",
-                            "action": {"class_name": "StoreValidationResultAction"},
+                            "action": {"class_name":
+                                       "StoreValidationResultAction"},
                         },
-                        {"name": "update_data_docs", "action": {"class_name": "UpdateDataDocsAction"}},
+                        {
+                            "name": "update_data_docs",
+                            "action": {"class_name": "UpdateDataDocsAction"}
+                            },
                     ],
                 )
                 context.add_or_update_checkpoint(checkpoint=checkpoint)
@@ -125,8 +134,9 @@ def ingest_wine_data():
 
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
-                    logging.info("No data quality issues found. File moved to good_data directory.")
-                    
+                    logging.info("No data quality issues found."
+                                 "File moved to good_data directory.")
+
                     return validation_result
                 else:
                     logging.warning("Data quality issues found.")
@@ -134,17 +144,18 @@ def ingest_wine_data():
 
                     for result in results['run_results'].values():
                         returned_result = result['validation_result']
-                    
+
                     for result in returned_result['results']:
                         logging.info(f'Expected count was: {result['result']}')
                         if result['result']['unexpected_count'] != 0:
-                            logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
-                        
+                            column = result['expectation_config']['kwargs']['column']
+                            logging.warning(f"Error: {column} - {result['result']}")
+
                             # Check if all rows are bad
                             if (result['result']['unexpected_percent'] == 100.0):
                                 logging.info("Found all rows bad.")
-                                move_file(file_path, BAD_DATA_DIR)                        
-                            else : 
+                                move_file(file_path, BAD_DATA_DIR)
+                            else:
                                 # return to split
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
@@ -159,7 +170,7 @@ def ingest_wine_data():
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
             logging.info("No file to validate.")
-            return # Return an empty dictionary if no validation results are available
+            return  # Return an empty dictionary if no validation results are available
 
     def move_file(file_path: str, target_dir: str) -> None:
         if os.path.exists(file_path):
@@ -210,9 +221,9 @@ def ingest_wine_data():
         data_issues = data.get('data_issues', [])
 
         data_errors = []
-        
+
         for issue in data_issues:
-            
+
             data_error_entry = {
                 'file_name': file_path,
                 'column_name': issue['column'],
@@ -227,7 +238,7 @@ def ingest_wine_data():
                 'unexpected_index_query': issue['result']['unexpected_index_query']
             }
             unexpected_indices = []
-            
+
             for index_data in issue['result']['unexpected_index_list']:
                 unexpected_index_entry = {
                     'index': index_data['index'],
@@ -237,8 +248,6 @@ def ingest_wine_data():
 
             data_errors.append([data_error_entry, unexpected_indices])
         return data_errors
-        
-
 
     def insert_data_to_database(data_errors, session):
         try:
@@ -247,10 +256,10 @@ def ingest_wine_data():
                 data_error = DataError(**error_entry[0])
                 session.add(data_error)
                 session.commit()
-                
+
                 # Retrieve the ID of the inserted row
                 data_error_id = data_error.id
-                
+
                 # Update data_error_id in unexpected indices
                 for index_entry in error_entry[1]:
                     index_entry['data_error_id'] = data_error_id
@@ -258,11 +267,10 @@ def ingest_wine_data():
                     unexpected_index = UnexpectedIndex(**index_entry)
                     session.add(unexpected_index)
                     session.commit()
-        
+
             print("Values inserted successfully.")
         except Exception as e:
             print("Error inserting values:", e)
-
 
     @task
     def send_alerts(file_path: str, validation_results: dict) -> None:
@@ -274,19 +282,16 @@ def ingest_wine_data():
     @task
     def save_data_errors(validation_results: dict) -> None:
         try:
-            engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
+            engine = db.create_engine(
+                'postgresql://postgres:postgres@host.docker.internal:5432/wine_quality'
+                )
             Session = sessionmaker(bind=engine)
-            
+
             data_errors = extract_values(validation_results)
             session = Session()
             insert_data_to_database(data_errors, session)
         except Exception as e:
             print("Error:", e)
 
-    read_task = read_data()
-    validate_task = validate_data(read_task)
-    split_and_save_task = split_and_save_data(read_task, validate_task)
-    # send_alerts_task = send_alerts(read_task, validate_task)
-    save_data_errors_task = save_data_errors(validate_task)
 
 ingest_wine_data_dag = ingest_wine_data()

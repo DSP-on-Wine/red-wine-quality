@@ -47,8 +47,9 @@ The goal is to develop a machine learning model that predicts red wine quality. 
    - Set up a PostgreSQL database.
    - Load dataset into the database.
    - Write SQL queries for data retrieval.
+   - about the new dags [on]
 
-8. **Grafana Dashboard Creation**
+8. **Grafana Dashboard Creation** [on]
 
    - Configure Grafana to connect with PostgreSQL.
    - Develop dashboards for monitoring data and model performance.
@@ -64,3 +65,4 @@ The goal is to develop a machine learning model that predicts red wine quality. 
     - Monitor application performance.
 
 **First project demo**: For the requirements of first defense of the project, please refer to the `TODO.md` file.
+
