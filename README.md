@@ -91,10 +91,6 @@ To set up the PostgreSQL database for the project, follow these steps:
          element_count INTEGER,
          unexpected_count INTEGER,
          unexpected_percent DOUBLE PRECISION,
-         missing_count INTEGER,
-         missing_percent DOUBLE PRECISION,
-         unexpected_percent_total DOUBLE PRECISION,
-         unexpected_percent_nonmissing DOUBLE PRECISION,
          unexpected_index_query TEXT,
          unexpected_index_list TEXT[],
          timestamp TIMESTAMP
@@ -103,9 +99,7 @@ To set up the PostgreSQL database for the project, follow these steps:
       CREATE TABLE data_success (
          id SERIAL PRIMARY KEY,
          file_name TEXT,
-         column_name TEXT,
          expectation TEXT,
-         unexpected_index_query TEXT,
          timestamp TIMESTAMP
       );
 

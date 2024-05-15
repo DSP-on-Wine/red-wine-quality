@@ -99,6 +99,10 @@ anonymous_usage_statistics:
 fluent_datasources:
   my_spark_in_memory_datasource:
     type: spark
+    assets:
+      data_chunk:
+        type: dataframe
+        batch_metadata: {}
 notebooks:
 include_rendered_content:
   globally: false
