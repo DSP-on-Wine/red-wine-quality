@@ -47,7 +47,8 @@ class UnexpectedIndex(Base):
     value = db.Column(db.String)
 
 
-@dag(schedule_interval=timedelta(days=1), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
+
+@dag(schedule_interval=timedelta(seconds=120), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
 
     @task
@@ -237,7 +238,8 @@ def ingest_wine_data():
             data_errors.append([data_error_entry, unexpected_indices])
         return data_errors
         
-    # Define function to insert data into database
+
+
     def insert_data_to_database(data_errors, session):
         try:
             for error_entry in data_errors:
@@ -272,11 +274,9 @@ def ingest_wine_data():
     @task
     def save_data_errors(validation_results: dict) -> None:
         try:
-            # Create SQLAlchemy engine
             engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
             Session = sessionmaker(bind=engine)
             
-            # Extracted values from extract_values function
             data_errors = extract_values(validation_results)
             session = Session()
             insert_data_to_database(data_errors, session)

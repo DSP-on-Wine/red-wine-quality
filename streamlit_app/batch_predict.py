@@ -19,8 +19,7 @@ def batch_predict(df: pd.DataFrame, source: str = "webapp"):
             density=row['density'],
             pH=row['pH'],
             sulphates=row['sulphates'],
-            alcohol=row['alcohol'], 
-            source='webapp'
+            alcohol=row['alcohol']
         )
 
         input_data_list.append(input_data)
@@ -34,9 +33,10 @@ def batch_predict(df: pd.DataFrame, source: str = "webapp"):
 
     if response.status_code == 200:
         predictions = response.json()
-        output = "\n".join([f"{i}: {pred['prediction']}\n"
-                            for i, pred in enumerate(predictions)])
+        prediction_values = [pred['prediction'] for pred in predictions]
+        df_with_predictions = df.copy()
+        df_with_predictions['prediction'] = prediction_values
+        return df_with_predictions
 
-        return output
     else:
         return f"Error: {response.text}"
