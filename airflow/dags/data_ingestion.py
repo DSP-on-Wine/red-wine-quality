@@ -12,8 +12,6 @@ from great_expectations.checkpoint import Checkpoint
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import asyncpg
-import asyncio
 
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
@@ -37,20 +35,27 @@ class DataError(Base):
     unexpected_percent_total = db.Column(db.Float)
     unexpected_percent_nonmissing = db.Column(db.Float)
     unexpected_index_query = db.Column(db.String)
-
-class UnexpectedIndex(Base):
-    __tablename__ = 'unexpected_indices'
+    unexpected_index_list = db.Column(db.ARRAY(db.String))
+    timestamp = db.Column(db.TIMESTAMP)
+class CorrectFormats(Base):
+    __tablename__ = 'data_success'
 
     id = db.Column(db.Integer, primary_key=True)
-    data_error_id = db.Column(db.Integer, db.ForeignKey('data_errors.id'))
-    index = db.Column(db.String)
-    value = db.Column(db.String)
+    file_name = db.Column(db.String)
+    column_name = db.Column(db.String)
+    expectation = db.Column(db.String)
+    unexpected_index_query = db.Column(db.String)
+    timestamp = db.Column(db.TIMESTAMP)
+
+@dag(
+    schedule_interval=timedelta(days=120), 
+    start_date=datetime(2024, 5, 9), 
+    catchup=False, 
+    tags=['data_ingestion'])
 
 
-
-@dag(schedule_interval=timedelta(seconds=120), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
 def ingest_wine_data():
-
+    ## move to temp dir, return new dir.
     @task
     def read_data() -> str:
         raw_files = os.listdir(RAW_DATA_DIR)
@@ -66,7 +71,7 @@ def ingest_wine_data():
 
     @task
     def validate_data(file_path: str):
-        if file_path:
+        if file_path: ## TODO - not just checking filepath, check if filepath exists in in raw-data
             logging.info(f"Validating file {file_path}...")
             try:
                 context_root_dir = "/opt/airflow/great_expectations"
@@ -74,11 +79,10 @@ def ingest_wine_data():
 
                 spark = SparkSession.builder.getOrCreate()
                 dataframe_datasource = context.sources.add_or_update_spark(
-                    name="my_spark_in_memory_datasource",
+                    name="my_spark_in_memory_datasource", ## TODO - change the name
                 )
 
-                csv_file_path = file_path
-                df = spark.read.csv(csv_file_path, header=True)
+                df = spark.read.csv(file_path, header=True)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
                     name="data_chunk",
                     dataframe=df,
@@ -86,17 +90,18 @@ def ingest_wine_data():
 
                 batch_request = dataframe_asset.build_batch_request()
                 suite = context.get_expectation_suite(expectation_suite_name='wine_expectation_suite')
-                
+                ## TODO - define multiple suites
                 validator = context.get_validator(
                     batch_request=batch_request,
                     expectation_suite = suite
                 )
 
                 my_checkpoint_name = "my_databricks_checkpoint"
+                ## TODO - define multiple checkpoints, different !appropriate! names
 
                 checkpoint = Checkpoint(
                     name=my_checkpoint_name,
-                    run_name_template="%Y%m%d-%H%M%S-my-run-name-template",
+                    run_name_template="%Y%m%d-%H%M%S-data-consistency",
                     data_context=context,
                     validator=validator,
                     action_list=[
@@ -108,6 +113,13 @@ def ingest_wine_data():
                     ],
                 )
                 context.add_or_update_checkpoint(checkpoint=checkpoint)
+                ## TODO - check if possible to add multiple checkpoints at once. 
+
+                ## TODO - 2 checkpoints: 
+                ##  one for file validity (rows and columns), drop immediately and return
+                ##  second checkpoint would need proper validation and rejects the whole file if it finds
+                ##  100% unexpected.
+
                 result_format: dict = {
                     "result_format": "COMPLETE",
                     "unexpected_index_column_names": ["index"],
@@ -115,18 +127,25 @@ def ingest_wine_data():
                 }
                 checkpoint_result = checkpoint.run(result_format=result_format)
 
+                ## TODO - not run the checkpoints at the same time
+                ## what follows is the second planned checkpoint
+
                 results = checkpoint_result
                 logging.info(results)
 
                 validation_result = {
+                    "to_split": False,
                     "file_path": file_path,
-                    "data_issues": []
+                    "data_issues": [],
+                    "timestamp": datetime.now(),
+                    "correct_formats": []
                 }
 
                 if results["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
                     logging.info("No data quality issues found. File moved to good_data directory.")
-                    
+                    ## TODO - extract data issues found so it is saved in postgres
+                    ## TODO - populate return value with correct formats and timestamp 
                     return validation_result
                 else:
                     logging.warning("Data quality issues found.")
@@ -139,18 +158,25 @@ def ingest_wine_data():
                         logging.info(f'Expected count was: {result['result']}')
                         if result['result']['unexpected_count'] != 0:
                             logging.warning(f"Error: {result['expectation_config']['kwargs']['column']} - {result['result']}")
-                        
-                            # Check if all rows are bad
                             if (result['result']['unexpected_percent'] == 100.0):
                                 logging.info("Found all rows bad.")
-                                move_file(file_path, BAD_DATA_DIR)                        
+                                move_file(file_path, BAD_DATA_DIR)       
+                                ## TODO - save data, use common function with input: results, output: data_issues                  
                             else : 
                                 # return to split
+                                validation_result['to_split'] = True 
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
-                                    'result': result['result']
+                                    'result': result['result'],
                                 })
+                                validation_result['timestamp'] = datetime.fromisoformat(results['run_id']['run_time'])
+                        else: 
+                            validation_result['correct_formats'].append({
+                                'column': result['expectation_config']['kwargs']['column'],
+                                'expectation': result['expectation_config']['expectation_type'],
+                                'query': result['result']['unexpected_index_query']
+                            })
 
                     logging.info(f"Found values with data issues, returned:\n{validation_result}.")
 
@@ -159,7 +185,7 @@ def ingest_wine_data():
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
             logging.info("No file to validate.")
-            return # Return an empty dictionary if no validation results are available
+            return # Return an empty dictionary if no validation results are available ## TODO - Find ways to skip tasks (save errors when all good, split and save when it's all bad/good)
 
     def move_file(file_path: str, target_dir: str) -> None:
         if os.path.exists(file_path):
@@ -172,7 +198,7 @@ def ingest_wine_data():
 
     @task
     def split_and_save_data(file_path: str, validation_task) -> None:
-        if validation_task['data_issues']:
+        if validation_task['to_split']:
             bad_rows = []
             data_issues = validation_task['data_issues']
             for issue in data_issues:
@@ -208,11 +234,12 @@ def ingest_wine_data():
     def extract_values(data):
         file_path = data.get('file_path')
         data_issues = data.get('data_issues', [])
+        time_stamp = data.get('timestamp')
+        correct_formats = data.get('correct_formats', [])
 
         data_errors = []
-        
+        data_success = []
         for issue in data_issues:
-            
             data_error_entry = {
                 'file_name': file_path,
                 'column_name': issue['column'],
@@ -224,44 +251,63 @@ def ingest_wine_data():
                 'missing_percent': issue['result']['missing_percent'],
                 'unexpected_percent_total': issue['result']['unexpected_percent_total'],
                 'unexpected_percent_nonmissing': issue['result']['unexpected_percent_nonmissing'],
-                'unexpected_index_query': issue['result']['unexpected_index_query']
+                'unexpected_index_query': issue['result']['unexpected_index_query'],
+                'unexpected_index_list': issue['result']['unexpected_index_list'],
+                'timestamp': time_stamp
             }
-            unexpected_indices = []
-            
-            for index_data in issue['result']['unexpected_index_list']:
-                unexpected_index_entry = {
-                    'index': index_data['index'],
-                    'value': index_data[issue['column']]
-                }
-                unexpected_indices.append(unexpected_index_entry)
+            data_errors.append(data_error_entry)
+        
+        for success in correct_formats:
+            correct_entry = {
+                'file_name': file_path,
+                'column_name': success['column'],
+                'expectation': success['expectation'],
+                'unexpected_index_query': success['query'],
+                'timestamp': success['timestamp']
+            }
+            data_success.append(correct_entry)
 
-            data_errors.append([data_error_entry, unexpected_indices])
-        return data_errors
+        return data_errors, data_success
         
 
 
-    def insert_data_to_database(data_errors, session):
-        try:
-            for error_entry in data_errors:
-                print("Inserting data error:", error_entry)
-                data_error = DataError(**error_entry[0])
-                session.add(data_error)
+    def insert_data_to_database(data_to_save, session, is_issue: bool):
+        if (is_issue):
+            try:
+                data_errors = []
+                for entry in data_to_save:
+                    error_entry = {
+                        'file_name': entry['file_path'],
+                        'column_name': entry['data_issues'],
+                        'expectation': entry['timestamp']
+                    }
+                    data_error = DataError(**error_entry)
+                    data_errors.append(data_error)
+
+                session.bulk_save_objects(data_errors)
                 session.commit()
-                
-                # Retrieve the ID of the inserted row
-                data_error_id = data_error.id
-                
-                # Update data_error_id in unexpected indices
-                for index_entry in error_entry[1]:
-                    index_entry['data_error_id'] = data_error_id
-                    print("Inserting unexpected index:", index_entry)
-                    unexpected_index = UnexpectedIndex(**index_entry)
-                    session.add(unexpected_index)
-                    session.commit()
-        
-            print("Values inserted successfully.")
-        except Exception as e:
-            print("Error inserting values:", e)
+                logging.info(f"{len(data_errors)} values inserted successfully.")
+
+            except Exception as e:
+                logging.error("Error inserting values:", e)
+        else:
+            try: 
+                correct_formats_list = []
+                for entry in data_to_save:
+                    correct_entry = {
+                        'file_name': entry['file_path'],
+                        'correct_format': entry['correct_formats'],
+                        'timestamp': entry['timestamp']
+                    }
+                    correct_format = CorrectFormats(**correct_entry)
+                    correct_formats_list.append(correct_format)
+
+                session.bulk_save_objects(correct_formats_list)
+                session.commit()
+                logging.info(f"{len(correct_formats_list)} values inserted successfully.")
+
+            except Exception as e:
+                logging.error("Error inserting values: ", e)
 
 
     @task
@@ -273,15 +319,19 @@ def ingest_wine_data():
 
     @task
     def save_data_errors(validation_results: dict) -> None:
-        try:
-            engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
-            Session = sessionmaker(bind=engine)
-            
-            data_errors = extract_values(validation_results)
-            session = Session()
-            insert_data_to_database(data_errors, session)
-        except Exception as e:
-            print("Error:", e)
+        if validation_results['data_issues']:
+
+            try:
+                engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
+                Session = sessionmaker(bind=engine)
+                data_errors, data_success = extract_values(validation_results)
+                session = Session()
+                if (data_errors):
+                    insert_data_to_database(data_errors, session, is_issue=1)
+                if (data_success): 
+                    insert_data_to_database(data_success, session, is_issue=0)
+            except Exception as e:
+                print("Error:", e)
 
     read_task = read_data()
     validate_task = validate_data(read_task)
