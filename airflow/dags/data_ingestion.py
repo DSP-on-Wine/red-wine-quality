@@ -68,12 +68,9 @@ def ingest_wine_data():
                 f.write('\n')
 
             file_path = os.path.join(RAW_DATA_DIR, random_file)
-          
-            move_file(file_path, TEMP_DATA_DIR)
-            new_path = os.path.join(TEMP_DATA_DIR, random_file)
-            
+                      
             logging.info(f"Selected file {random_file} from raw-data.")
-            return new_path
+            return file_path
         else:
             logging.info("No files found in raw-data directory.")
             return None
