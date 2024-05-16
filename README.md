@@ -265,6 +265,7 @@ Before proceeding with the installation, ensure that you have the following prer
    RAW_DATA_DIR = '../raw_data'
    GOOD_DATA_DIR = '../good_data'
    BAD_DATA_DIR = '../bad_data'
+   TEMP_DATA_DIR = '../temp_data'
    ```
 
    Note that this `.env` file is distinct from the one you created in the root directory, which contains database connection information.
@@ -284,7 +285,7 @@ Before proceeding with the installation, ensure that you have the following prer
    After `--build` once, you can rerun the docker with simply entering into your terminal:
 
    ```bash
-   dockercompose up -d
+   dockercompose up -d --build
    ```
 
 5. **Make sure docker is enabled in the windows firewall.**
