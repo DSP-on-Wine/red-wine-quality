@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
+TEMP_DATA_DIR = '/opt/airflow/temp_data'
 
 # Define SQLAlchemy model
 Base = declarative_base()
@@ -81,6 +82,7 @@ def ingest_wine_data():
                     name="my_spark_in_memory_datasource", ## TODO - change the name
                 )
 
+                current_file_path = file_path
                 df = spark.read.csv(file_path, header=True)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
                     name="data_chunk",
@@ -408,6 +410,4 @@ def ingest_wine_data():
     send_alerts_task = send_alerts(read_task, validate_task)
     save_data_errors_task = save_data_errors(validate_task)
 
-    # read_task >> validate_task 
-    # validate_task >> split_and_save_task
 ingest_wine_data_dag = ingest_wine_data()
