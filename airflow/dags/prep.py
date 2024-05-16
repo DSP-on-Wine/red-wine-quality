@@ -4,6 +4,7 @@
 # import logging
 # import shutil
 # import pandas as pd
+# import requests
 # from pyspark.sql import SparkSession
 # from airflow.decorators import dag, task
 # from datetime import datetime, timedelta
@@ -252,7 +253,7 @@
 #                         })
 
 #             # print(f"Found values with data issues, returned:\n{validation_result}.")
-
+#             context.get
 #             return validation_result
                 
 #         except Exception as e:
@@ -342,7 +343,6 @@
 #     except Exception as e:
 #         print("Error inserting values:", e)
 
-
 # def save_data_errors(validation_results: dict) -> None:
 #     if validation_results['data_issues']:
 #         try:
@@ -357,8 +357,37 @@
 #         except Exception as e:
 #             print("Error:", e)
 
+# def send_alerts(validation_result):
+#     if validation_result:
+#         validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
+#         message = {
+#         "text": "Data Quality Report",
+#         "attachments": [
+#             {
+#                 "contentType": "application/json",
+#                 "contentUrl": None,
+#                 "content": f"[Data Quality Report]({validation_result_url})"
+#             }
+#         ]
+#         }
+
+#         teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/3c9355bdf9b14a9da2be02ab0866a064/721cb538-78e6-4e41-9f05-013bbc2d426d"
+#         response = requests.post(teams_webhook_url, json=message)
+
+#         if response.status_code == 200:
+#             logging.info("Alert sent successfully to Microsoft Teams.")
+#         else:
+#             logging.error("Failed to send alert to Microsoft Teams:", response.text)
+
+#     else:
+#         logging.warning("No validation found.")
+
+# Send the alert to Microsoft Teams
+
+
+
 # read_task = read_data()
 # validate_task = validate_data(read_task)
 # split_and_save_task = split_and_save_data(read_task, validate_task)
-# # send_alerts_task = send_alerts(read_task, validate_task)
+# send_alerts_task = send_alerts(validate_task)
 # save_data_errors_task = save_data_errors(validate_task)

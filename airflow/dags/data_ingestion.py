@@ -18,10 +18,7 @@ RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
 TEMP_DATA_DIR = '/opt/airflow/temp_data'
-
-# Define SQLAlchemy model
-Base = declarative_base()
-
+INGESTION_LOCK_FILE = 'ingestion_lock.txt'
 # Define SQLAlchemy model
 Base = declarative_base()
 
@@ -48,7 +45,7 @@ class CorrectFormats(Base):
     timestamp = db.Column(db.TIMESTAMP)
 
 @dag(
-    schedule_interval=timedelta(seconds=30),
+    schedule_interval=timedelta(days=30),
     start_date=datetime(2024, 5, 16),
     catchup=False,
     tags=['data_ingestion'],
@@ -59,12 +56,22 @@ def ingest_wine_data():
     @task
     def read_data() -> str:
         raw_files = os.listdir(RAW_DATA_DIR)
-
-        if raw_files:
+            
+        while raw_files:
             random_file = random.choice(raw_files)
+            with open(INGESTION_LOCK_FILE, 'r') as f:
+                if random_file in (s.rstrip() for s in f.readlines()):
+                    continue
+            with open(INGESTION_LOCK_FILE, 'a') as f:
+                f.write(random_file)
+
             file_path = os.path.join(RAW_DATA_DIR, random_file)
+          
+            move_file(file_path, TEMP_DATA_DIR)
+            new_path = os.path.join(TEMP_DATA_DIR, random_file)
+            
             logging.info(f"Selected file {random_file} from raw-data.")
-            return file_path
+            return new_path
         else:
             logging.info("No files found in raw-data directory.")
             return None
@@ -73,6 +80,7 @@ def ingest_wine_data():
     def validate_data(file_path: str):
         if file_path:  ## TODO - not just checking filepath, check if filepath exists in in raw-data
             print(f"Validating file {file_path}...")
+            # move_file(file_path, TEMP_DATA_DIR)
             try:
                 context_root_dir = "/opt/airflow/great_expectations"
                 context = gx.get_context(context_root_dir=context_root_dir)
@@ -357,37 +365,30 @@ def ingest_wine_data():
             print("Error inserting values:", e)
 
     @task
-    def send_alerts(file_path: str, validation_results: dict) -> None:
-        # Generate a report of the data problems
-        # Send an alert using Teams
-        # Include criticality, summary of errors, and link to the report
-        payload = {
-          "@type": "MessageCard",
-          "@context": "http://schema.org/extensions",
-          "summary": "Summary",
-          "sections": [{
-            "activityTitle": "Activity Title",
-            "activitySubtitle": "Activity Subtitle",
-            "facts": [
-              {
-                "file_name": file_path,
-                "results": validation_results
-              }
-            ],
-            "text": "Text"
-          }],
-          "potentialAction": [{
-            "@type": "OpenUri",
-            "name": "Link name",
-            "targets": [{
-              "os": "default",
-              "uri": "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/3c9355bdf9b14a9da2be02ab0866a064/721cb538-78e6-4e41-9f05-013bbc2d426d"
-            }]
-          }]
-        }
-        headers = {"content-type": "application/json"}
-        requests.post("<insert_webhook_url_here>", json=payload, headers=headers)
+    def send_alerts(validation_result):
+        if validation_result:
+            validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
+            message = {
+            "text": "Data Quality Report",
+            "attachments": [
+                {
+                    "contentType": "application/json",
+                    "contentUrl": None,
+                    "content": f"[Data Quality Report]({validation_result_url})"
+                }
+            ]
+            }
 
+            teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/3c9355bdf9b14a9da2be02ab0866a064/721cb538-78e6-4e41-9f05-013bbc2d426d"
+            response = requests.post(teams_webhook_url, json=message)
+
+            if response.status_code == 200:
+                logging.info("Alert sent successfully to Microsoft Teams.")
+            else:
+                logging.error("Failed to send alert to Microsoft Teams:", response.text)
+
+        else:
+            logging.warning("No validation found.")
     @task
     def save_data_errors(validation_results: dict) -> None:
         if validation_results['data_issues']:
@@ -407,7 +408,9 @@ def ingest_wine_data():
     read_task = read_data()
     validate_task = validate_data(read_task)
     split_and_save_task = split_and_save_data(read_task, validate_task)
-    send_alerts_task = send_alerts(read_task, validate_task)
+    send_alerts_task = send_alerts(validate_task)
     save_data_errors_task = save_data_errors(validate_task)
+
+    read_task >> validate_task >> [split_and_save_task, send_alerts_task, save_data_errors_task]
 
 ingest_wine_data_dag = ingest_wine_data()
