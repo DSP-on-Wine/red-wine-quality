@@ -18,7 +18,8 @@ RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
 BAD_DATA_DIR = '/opt/airflow/bad_data'
 TEMP_DATA_DIR = '/opt/airflow/temp_data'
-INGESTION_LOCK_FILE = 'ingestion_lock.txt'
+INGESTION_LOCK_FILE = 'dags/ingestion_lock.txt'
+
 # Define SQLAlchemy model
 Base = declarative_base()
 
@@ -64,6 +65,7 @@ def ingest_wine_data():
                     continue
             with open(INGESTION_LOCK_FILE, 'a') as f:
                 f.write(random_file)
+                f.write('\n')
 
             file_path = os.path.join(RAW_DATA_DIR, random_file)
           
@@ -90,7 +92,6 @@ def ingest_wine_data():
                     name="my_spark_in_memory_datasource", ## TODO - change the name
                 )
 
-                current_file_path = file_path
                 df = spark.read.csv(file_path, header=True)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
                     name="data_chunk",
@@ -179,6 +180,7 @@ def ingest_wine_data():
                 # Run the null, out of range and duplicate checkpoint
                 out_of_range_and_duplicate_result = out_of_range_and_duplicate_checkpoint.run(result_format=result_format)
                 results = out_of_range_and_duplicate_result
+                print(results)
 
                 if out_of_range_and_duplicate_result["success"]:
                     move_file(file_path, GOOD_DATA_DIR)
@@ -368,18 +370,43 @@ def ingest_wine_data():
     def send_alerts(validation_result):
         if validation_result:
             validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
+            print(validation_result_url)
+            content = ""
+            if validation_result['data_issues']:
+                for issue in validation_result['data_issues']:
+                    content += f"""
+                    On file {validation_result['file_path']} found {issue['result']['unexpected_percent']}% errors.
+                    """
+            else: 
+                ## TODO -- find a way to skip this task, return
+                pass      
+
             message = {
-            "text": "Data Quality Report",
-            "attachments": [
-                {
-                    "contentType": "application/json",
-                    "contentUrl": None,
-                    "content": f"[Data Quality Report]({validation_result_url})"
-                }
-            ]
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "summary": "Summary",
+                "sections": [{
+                    "activityTitle": "Data quality report",
+                    "activitySubtitle": "Errors found:",
+                    "facts": [
+                    {
+                        "name": "Result",
+                        "value": content
+                    }
+                    ],
+                }],
+                "potentialAction": [{
+                    "@type": "OpenUri",
+                    "name": "Link to the data docs",
+                    "targets": [{
+                    "os": "default",
+                    "uri": f"{validation_result_url}"
+                    }]
+                }]
             }
 
-            teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/3c9355bdf9b14a9da2be02ab0866a064/721cb538-78e6-4e41-9f05-013bbc2d426d"
+            print("Validation result found: ", content, message)
+            teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/21549bbb63eb497eb1540e9abb46a674/721cb538-78e6-4e41-9f05-013bbc2d426d"
             response = requests.post(teams_webhook_url, json=message)
 
             if response.status_code == 200:

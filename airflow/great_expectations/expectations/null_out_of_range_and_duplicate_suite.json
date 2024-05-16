@@ -36,7 +36,7 @@
       "expectation_type": "expect_column_values_to_be_between",
       "kwargs": {
         "column": "pH",
-        "max_value": 4,
+        "max_value": 5,
         "min_value": 2
       },
       "meta": {}

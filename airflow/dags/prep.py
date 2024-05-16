@@ -356,31 +356,46 @@
 #                 insert_data_to_database(data_success, session, is_issue=False)
 #         except Exception as e:
 #             print("Error:", e)
+import requests
+import logging
+import os
 
-# def send_alerts(validation_result):
-#     if validation_result:
-#         validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
-#         message = {
-#         "text": "Data Quality Report",
-#         "attachments": [
-#             {
-#                 "contentType": "application/json",
-#                 "contentUrl": None,
-#                 "content": f"[Data Quality Report]({validation_result_url})"
-#             }
-#         ]
-#         }
+def send_alerts():
+    validation_result_url = "file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html"
+    payload = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "summary": "Summary",
+            "sections": [{
+                "activityTitle": "Data Quality Report",
+                "activitySubtitle": "Error",
+                "facts": [
+                {
+                    "name": "Key",
+                    "value": "Con"
+                }
+                ],
+                "text": "Text"
+            }],
+            "potentialAction": [{
+                "@type": "OpenUri",
+                "name": "Link name",
+                "targets": [{
+                "os": "default",
+                "uri": validation_result_url
+                }]
+            }]
+            }
 
-#         teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/3c9355bdf9b14a9da2be02ab0866a064/721cb538-78e6-4e41-9f05-013bbc2d426d"
-#         response = requests.post(teams_webhook_url, json=message)
+            # print("Validation result found: ", validation_result)
+    teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/21549bbb63eb497eb1540e9abb46a674/721cb538-78e6-4e41-9f05-013bbc2d426d"
+    response = requests.post(teams_webhook_url, json=payload)
 
-#         if response.status_code == 200:
-#             logging.info("Alert sent successfully to Microsoft Teams.")
-#         else:
-#             logging.error("Failed to send alert to Microsoft Teams:", response.text)
-
-#     else:
-#         logging.warning("No validation found.")
+    if response.status_code == 200:
+        print("Alert sent successfully to Microsoft Teams.")
+    else:
+        print("Failed to send alert to Microsoft Teams:", response.text)
+# send_alerts()
 
 # Send the alert to Microsoft Teams
 
