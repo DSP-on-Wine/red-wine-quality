@@ -52,7 +52,6 @@ class CorrectFormats(Base):
     concurrency=2,
 )
 def ingest_wine_data():
-    ## move to temp dir, return new dir.
     @task
     def read_data() -> str:
         raw_files = os.listdir(RAW_DATA_DIR)
@@ -77,19 +76,22 @@ def ingest_wine_data():
 
     @task
     def validate_data(file_path: str):
-        if file_path:  ## TODO - not just checking filepath, check if filepath exists in in raw-data
+        if file_path:  
             print(f"Validating file {file_path}...")
-            # move_file(file_path, TEMP_DATA_DIR)
             try:
                 context_root_dir = "/opt/airflow/great_expectations"
                 context = gx.get_context(context_root_dir=context_root_dir)
 
-                spark = SparkSession.builder.getOrCreate()
-                dataframe_datasource = context.sources.add_or_update_spark(
-                    name="my_spark_in_memory_datasource", ## TODO - change the name
-                )
+                # spark = SparkSession.builder.getOrCreate()
+                # dataframe_datasource = context.sources.add_or_update_spark(
+                #     name="my_spark_in_memory_datasource", ## TODO - change the name
+                # )
 
-                df = spark.read.csv(file_path, header=True)
+                # df = spark.read.csv(file_path, header=True)
+                dataframe_datasource = context.sources.add_or_update_pandas(
+                    name="my_pandas_data_validation",  # Changed the name to be more descriptive
+                )
+                df = pd.read_csv(file_path)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
                     name="data_chunk",
                     dataframe=df,
@@ -214,13 +216,13 @@ def ingest_wine_data():
                                 logging.warning("Found all rows to be bad.")
                                 move_file(file_path, BAD_DATA_DIR)   
                                 indices = []
-                                for index in result['result']['unexpected_index_list']:
+                                for index in result['result']['partial_unexpected_index_list']:
                                     indices.append(index['index'])
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
                                     'unexpected_percent': result['result']['unexpected_percent'],
-                                    'unexpected_index_list': indices,
+                                    'unexpected_index_list': result['result']['unexpected_index_list'],
                                     'unexpected_index_query': result['result']['unexpected_index_query'],
                                     'observed_value': '',
                                 })
@@ -229,13 +231,14 @@ def ingest_wine_data():
                                 validation_result['to_split'] = 1 
                                 print(f'val to split is true, {validation_result['to_split']}.')
                                 indices = []
-                                for index in result['result']['unexpected_index_list']:
+                                for index in result['result']['partial_unexpected_index_list']:
                                     indices.append(index['index'])
+                                logging.info(f"Found indexes {indices} bad.")
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
                                     'unexpected_percent': result['result']['unexpected_percent'],
-                                    'unexpected_index_list': indices,
+                                    'unexpected_index_list': result['result']['unexpected_index_list'],
                                     'unexpected_index_query': result['result']['unexpected_index_query'],
                                     'observed_value': '',                                 
                                 })
@@ -265,21 +268,25 @@ def ingest_wine_data():
 
     @task
     def split_and_save_data(file_path: str, validation_task) -> None:
+        logging.info(validate_task)
         if validation_task and validation_task['to_split'] == 1:
-            bad_rows = validate_task['data_issues']['unexpected_index_list']
-            # data_issues = validation_task['data_issues']
-            # for issue in data_issues:
-            #     indices = issue['result']['partial_unexpected_index_list']
-            #     print(f"Validation results: {issue['result']}")
-            #     for i in indices:
-            #         bad_rows.append(int(i['index']))
+            logging.info(f"Complete issues: {validate_task['data_issues']}")
+            bad_rows = []
+            data_issues = validation_task['data_issues']
+            for issue in data_issues:
+                indices = issue.get('unexpected_index_list', [])
+                logging.info(f"Validation results: {issue}")
+                for i in indices:
+                    bad_rows.append(int(i['index']))
 
             logging.info(f"Splitting and saving data for file: {file_path}")
             logging.warning(f"Bad index results: {bad_rows}")
 
             df = pd.read_csv(file_path)
-            good_df = df.loc[~df['index'].isin(bad_rows)]
-            bad_df = df.loc[df['index'].isin(bad_rows)]
+            good_df = df.loc[~df.index.isin(bad_rows)]
+            bad_df = df.loc[df.index.isin(bad_rows)]
+            logging.info(f"Returned bad df as {bad_df}")
+            logging.info(f"Returned good df as {good_df}")
 
             file_name = os.path.basename(file_path).split('.')[0]
 
@@ -296,8 +303,7 @@ def ingest_wine_data():
                 logging.info(f"The file {file_path} has been deleted.")
 
         else:
-            
-            print(f"No data issues found for file {file_path}")
+            print(f"No unhandled data issues found for file {file_path}")
             raise AirflowSkipException
 
 
