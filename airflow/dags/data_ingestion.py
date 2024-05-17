@@ -1,4 +1,4 @@
-import json
+import numpy as np
 import os
 import random
 import logging
@@ -31,11 +31,9 @@ class DataError(Base):
     file_name = db.Column(db.String)
     column_name = db.Column(db.String)
     expectation = db.Column(db.String)
-    element_count = db.Column(db.Integer)
-    unexpected_count = db.Column(db.Integer)
     unexpected_percent = db.Column(db.Float)
     unexpected_index_query = db.Column(db.String)
-    unexpected_index_list = db.Column(db.ARRAY(db.String))
+    observed_value = db.Column(db.String)
     timestamp = db.Column(db.TIMESTAMP)
 
 class CorrectFormats(Base):
@@ -100,7 +98,7 @@ def ingest_wine_data():
                 batch_request = dataframe_asset.build_batch_request()
 
                 row_and_column_suite = context.get_expectation_suite(expectation_suite_name='row_and_column_suite')
-                out_of_range_and_duplicate_suite = context.get_expectation_suite(expectation_suite_name='null_out_of_range_and_duplicate_suite')
+                out_of_range_and_duplicate_suite = context.get_expectation_suite(expectation_suite_name='null_out_of_range_suite')
 
 
                 row_and_column_checkpoint = Checkpoint(
@@ -138,8 +136,8 @@ def ingest_wine_data():
                 results = row_and_column_result
                 print(results)
 
-                validation_result = {
-                    "to_split": 0,
+                validation_result = { 
+                   "to_split": 0,
                     "file_path": file_path,
                     "data_issues": [],
                     "timestamp": datetime.now(),
@@ -158,11 +156,17 @@ def ingest_wine_data():
                             validation_result['data_issues'].append({
                                 'column': result['expectation_config']['kwargs']['column'],
                                 'expectation': result['expectation_config']['expectation_type'],
+                                'unexpected_percent': '',
+                                'unexpected_index_query': '',
+                                'observed_value': ''
                             })
                         else: 
                             validation_result['data_issues'].append({
+                                'column': '',
                                 'expectation': result['expectation_config']['expectation_type'],
-                                'result': result['result'],
+                                'unexpected_percent': '',
+                                'unexpected_index_query': '',
+                                'observed_value': result['result']['observed_value'],
                             })
                     return validation_result ## it has to break
                 else: 
@@ -212,7 +216,9 @@ def ingest_wine_data():
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
-                                    'result': result['result'],
+                                    'unexpected_percent': result['result']['unexpected_percent'],
+                                    'unexpected_index_query': ['result']['unexpected_index_query'],
+                                    'observed_value': '',
                                 })
                             else : 
                                 logging.info("Some rows are good.")
@@ -221,8 +227,9 @@ def ingest_wine_data():
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
-                                    'result': result['result'],
-                                })
+                                    'unexpected_percent': result['result']['unexpected_percent'],
+                                    'unexpected_index_query': ['result']['unexpected_index_query'],
+                                    'observed_value': '',                                })
                         else: 
                             validation_result['correct_formats'].append({
                                 'expectation': result['expectation_config']['expectation_type']
@@ -295,18 +302,14 @@ def ingest_wine_data():
         data_errors = []
         data_success = []
         for issue in data_issues:
-            indices = ""
-            for index in issue['result']['unexpected_index_list']:
-                indices += str(index['index'])
+
             data_error_entry = {
                 'file_name': file_path,
                 'column_name': issue['column'],
                 'expectation': issue['expectation'],
-                'element_count': issue['result']['element_count'],
-                'unexpected_count': issue['result']['unexpected_count'],
-                'unexpected_percent': issue['result']['unexpected_percent'],
-                'unexpected_index_query': issue['result']['unexpected_index_query'],
-                'unexpected_index_list': indices,
+                'unexpected_percent': issue['unexpected_percent'],
+                'unexpected_index_query': issue['unexpected_index_query'],
+                'observed_value': issue['observed_value'],
                 'timestamp': time_stamp
             }
             data_errors.append(data_error_entry)
@@ -374,13 +377,11 @@ def ingest_wine_data():
             print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
+                content += "On file {validation_result['file_path']} found"
                 for issue in validation_result['data_issues']:
-                    content += f"""
-                    On file {validation_result['file_path']} found {issue['result']['unexpected_percent']}% errors.
-                    """
+                    content += f"""Problem: {issue}"""
             else: 
-                ## TODO -- find a way to skip this task, return
-                pass      
+                raise AirflowSkipException     
 
             message = {
                 "@type": "MessageCard",

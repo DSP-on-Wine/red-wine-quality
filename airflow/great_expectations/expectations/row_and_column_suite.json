@@ -44,13 +44,6 @@
         "column": "volatile acidity"
       },
       "meta": {}
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": {
-        "column": "index"
-      },
-      "meta": {}
     }
   ],
   "ge_cloud_id": null,
