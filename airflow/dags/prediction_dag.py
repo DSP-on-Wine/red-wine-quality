@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from airflow.exception import AirflowSkipException
 
-## TODO:
+# TODO:
 # see how to read DB info from .env file
 # try to make it select multiple files at once
 
@@ -20,10 +20,12 @@ GOOD_DATA_DIR = '/opt/airflow/good_data'
 # Define SQLAlchemy model
 Base = declarative_base()
 
+
 class OldFile(Base):
     __tablename__ = 'old_files'
 
     filename = Column(String, primary_key=True)
+
 
 # Database connection
 DB_USER = 'postgres'
@@ -32,8 +34,11 @@ DB_HOST = 'host.docker.internal'
 DB_PORT = '5432'
 DB_NAME = 'wine_quality'
 
-engine = create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
+engine = create_engine(
+    f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+    )
 Session = sessionmaker(bind=engine)
+
 
 class InputData(BaseModel):
     fixed_acidity: float
@@ -48,7 +53,13 @@ class InputData(BaseModel):
     sulphates: float
     alcohol: float
 
-@dag(schedule_interval=timedelta(seconds=150), start_date=datetime(2024, 5, 9), catchup=False, tags=['data_ingestion'])
+
+@dag(
+        schedule_interval=timedelta(seconds=150),
+        start_date=datetime(2024, 5, 9),
+        catchup=False,
+        tags=['data_ingestion']
+        )
 def wine_prediction_dag():
 
     @task
@@ -56,13 +67,21 @@ def wine_prediction_dag():
         session = Session()
         try:
             # Query existing files from the database
-            existing_files = [file.filename for file in session.query(OldFile).all()]
+            existing_files = [
+                file.filename for file in session.query(OldFile).all()
+                ]
             good_data_files = os.listdir(GOOD_DATA_DIR)
-            new_files = [file for file in good_data_files if file not in existing_files]
+            new_files = [
+                file for file in good_data_files if file not in existing_files
+                ]
             if new_files:
-                logging.info("New ingested files found in good_data directory.")
+                logging.info(
+                    "New ingested files found in good_data directory."
+                    )
             else:
-                logging.info("No new ingested files found in good_data directory.")
+                logging.info(
+                    "No new ingested files found in good_data directory."
+                    )
             return new_files
         finally:
             session.close()
@@ -104,8 +123,10 @@ def wine_prediction_dag():
 
                     if response.status_code == 200:
                         predictions = response.json()
-                        output = "\n".join([f"{i}: {pred['prediction']}\n"
-                                            for i, pred in enumerate(predictions)])
+                        output = "\n".join(
+                            [f"{i}: {pred['prediction']}\n"
+                             for i, pred in enumerate(predictions)]
+                                            )
 
                         # Save file name in the database
                         session.add(OldFile(filename=file))
@@ -114,9 +135,9 @@ def wine_prediction_dag():
                         output_list.append(output)  # Append output for this file
                     else:
                         output_list.append(f"Error: {response.text}")
-            
+
             except Exception as e:
-            # Log the exception and append error message to output list
+                # Log the exception and append error message to output list
                 logging.error(f"Error making predictions: {e}")
                 output_list.append(f"Error making predictions: {e}")
 
@@ -129,5 +150,6 @@ def wine_prediction_dag():
     check_for_new_data_task = check_for_new_data()
     make_predictions_task = make_predictions(check_for_new_data_task)
     check_for_new_data_task >> make_predictions_task
+
 
 wine_prediction_dag = wine_prediction_dag()

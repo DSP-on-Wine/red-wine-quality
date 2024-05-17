@@ -1,4 +1,3 @@
-import json
 import os
 import random
 import logging
@@ -24,6 +23,7 @@ INGESTION_LOCK_FILE = 'dags/ingestion_lock.txt'
 # Define SQLAlchemy model
 Base = declarative_base()
 
+
 class DataError(Base):
     __tablename__ = 'data_errors'
 
@@ -38,6 +38,7 @@ class DataError(Base):
     unexpected_index_list = db.Column(db.ARRAY(db.String))
     timestamp = db.Column(db.TIMESTAMP)
 
+
 class CorrectFormats(Base):
     __tablename__ = 'data_success'
 
@@ -46,12 +47,13 @@ class CorrectFormats(Base):
     expectation = db.Column(db.String)
     timestamp = db.Column(db.TIMESTAMP)
 
+
+
 @dag(
-    schedule_interval=timedelta(days=30),
-    start_date=datetime(2024, 5, 16),
-    catchup=False,
-    tags=['data_ingestion'],
-    concurrency=2,
+        schedule_interval=timedelta(seconds=120),
+        start_date=datetime(2024, 5, 9),
+        catchup=False,
+        tags=['data_ingestion']
 )
 def ingest_wine_data():
     ## move to temp dir, return new dir.
@@ -98,7 +100,6 @@ def ingest_wine_data():
                 )
 
                 batch_request = dataframe_asset.build_batch_request()
-
                 row_and_column_suite = context.get_expectation_suite(expectation_suite_name='row_and_column_suite')
                 out_of_range_and_duplicate_suite = context.get_expectation_suite(expectation_suite_name='null_out_of_range_and_duplicate_suite')
 
@@ -218,6 +219,7 @@ def ingest_wine_data():
                                 logging.info("Some rows are good.")
                                 validation_result['to_split'] = 1 
                                 print(f'val to split is true, {validation_result['to_split']}.')
+
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
@@ -237,7 +239,7 @@ def ingest_wine_data():
         else:
             logging.info("No file to validate.")
             raise AirflowSkipException
-    
+
     def move_file(file_path: str, target_dir: str) -> None:
         if os.path.exists(file_path):
             file_name = os.path.basename(file_path)
@@ -322,7 +324,7 @@ def ingest_wine_data():
         print(f"Found {len(data_success)} data success.")
 
         return data_errors, data_success
-        
+
 
     def insert_data_to_database(data_to_save, session, is_issue: bool):
         try:
@@ -363,7 +365,6 @@ def ingest_wine_data():
                 session.bulk_save_objects(correct_formats_list)
                 session.commit()
                 print(f"{len(correct_formats_list)} values inserted successfully.")
-
         except Exception as e:
             print("Error inserting values:", e)
 
@@ -445,3 +446,4 @@ def ingest_wine_data():
     read_task >> validate_task >> [split_and_save_task, send_alerts_task, save_data_errors_task]
 
 ingest_wine_data_dag = ingest_wine_data()
+
