@@ -13,6 +13,7 @@ from great_expectations.checkpoint import Checkpoint
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from airflow.exceptions import AirflowSkipException
 
 RAW_DATA_DIR = '/opt/airflow/raw_data'
 GOOD_DATA_DIR = '/opt/airflow/good_data'
@@ -73,6 +74,7 @@ def ingest_wine_data():
             return file_path
         else:
             logging.info("No files found in raw-data directory.")
+            raise AirflowSkipException
             return None
 
     @task
@@ -234,7 +236,7 @@ def ingest_wine_data():
                 logging.error(f"Error occurred while validating file {file_path}: {e}")
         else:
             logging.info("No file to validate.")
-            return
+            raise AirflowSkipException
     
     def move_file(file_path: str, target_dir: str) -> None:
         if os.path.exists(file_path):
@@ -278,7 +280,9 @@ def ingest_wine_data():
                 logging.info(f"The file {file_path} has been deleted.")
 
         else:
+            
             print(f"No data issues found for file {file_path}")
+            raise AirflowSkipException
 
 
     def extract_values(data):
@@ -293,7 +297,7 @@ def ingest_wine_data():
         for issue in data_issues:
             indices = ""
             for index in issue['result']['unexpected_index_list']:
-                indices += str(index)
+                indices += str(index['index'])
             data_error_entry = {
                 'file_name': file_path,
                 'column_name': issue['column'],
@@ -428,6 +432,9 @@ def ingest_wine_data():
                     insert_data_to_database(data_success, session, is_issue=0)
             except Exception as e:
                 print("Error:", e)
+        else:
+            logging.warning('No data issues in file')
+            raise AirflowSkipException
 
     read_task = read_data()
     validate_task = validate_data(read_task)
