@@ -1,0 +1,53 @@
+1. Prediction standard deviation over time
+
+SQL QUERY
+SELECT
+  date_trunc('min', timestamp) AS time,
+  STDDEV(prediction) AS prediction_stddev
+FROM
+  predictions
+GROUP BY
+  time
+ORDER BY
+  time;
+
+
+2. Prediction average over time
+
+SELECT
+  DATE_TRUNC('sec', timestamp) AS time,
+  AVG(prediction) AS average_prediction
+FROM
+  predictions
+WHERE
+  timestamp >= NOW() - INTERVAL '1 week'  -- Adjust the time period as needed
+GROUP BY
+  time
+ORDER BY
+  time;
+
+
+3. Average alcohol values over time
+
+SELECT
+  date_trunc('min', timestamp) AS time,
+  AVG(alcohol) AS avg_alcohol
+FROM
+  predictions
+GROUP BY
+  time
+ORDER BY
+  time;
+
+
+4. Average sulphates values over time
+
+SELECT
+  date_trunc('sec', timestamp) AS time,
+  AVG(sulphates) AS avg_sulphates
+FROM
+  predictions
+GROUP BY
+  time
+ORDER BY
+  time;
