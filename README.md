@@ -65,7 +65,7 @@ To set up the PostgreSQL database for the project, follow these steps:
    - Open the query tool and execute the following script to create the predictions table:
 
      ```sql
-     CREATE TABLE IF NOT EXISTS predictions (
+      CREATE TABLE IF NOT EXISTS predictions (
          id SERIAL PRIMARY KEY,
          fixed_acidity FLOAT,
          volatile_acidity FLOAT,
@@ -81,33 +81,33 @@ To set up the PostgreSQL database for the project, follow these steps:
          prediction FLOAT,
          timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
          source VARCHAR(50);
-     );
-     
-      CREATE TABLE data_errors (
-        id SERIAL PRIMARY KEY,
-        file_name TEXT,
-        column_name TEXT,
-        expectation TEXT,
-        element_count INTEGER,
-        unexpected_count INTEGER,
-        unexpected_percent DOUBLE PRECISION,
-        missing_count INTEGER,
-        missing_percent DOUBLE PRECISION,
-        unexpected_percent_total DOUBLE PRECISION,
-        unexpected_percent_nonmissing DOUBLE PRECISION,
-        unexpected_index_query TEXT
       );
-   
-     CREATE TABLE unexpected_indices (
-       id SERIAL PRIMARY KEY,
-       data_error_id INTEGER REFERENCES data_errors(id),
-       index TEXT,
-       value TEXT
-     );
 
-     CREATE TABLE IF NOT EXISTS old_files (
+      CREATE TABLE data_errors (
+         id SERIAL PRIMARY KEY,
+         file_name TEXT,
+         column_name TEXT,
+         expectation TEXT,
+         element_count INTEGER,
+         unexpected_count INTEGER,
+         unexpected_percent DOUBLE PRECISION,
+         unexpected_index_query TEXT,
+         unexpected_index_list TEXT[],
+         timestamp TIMESTAMP
+      );
+
+      CREATE TABLE data_success (
+         id SERIAL PRIMARY KEY,
+         file_name TEXT,
+         expectation TEXT,
+         timestamp TIMESTAMP
+      );
+
+
+      CREATE TABLE IF NOT EXISTS old_files (
        id SERIAL PRIMARY KEY,
-       filename VARCHAR(255) UNIQUE);
+       filename VARCHAR(255) UNIQUE
+      );
 
      ```
 
@@ -265,6 +265,7 @@ Before proceeding with the installation, ensure that you have the following prer
    RAW_DATA_DIR = '../raw_data'
    GOOD_DATA_DIR = '../good_data'
    BAD_DATA_DIR = '../bad_data'
+   TEMP_DATA_DIR = '../temp_data'
    ```
 
    Note that this `.env` file is distinct from the one you created in the root directory, which contains database connection information.
@@ -276,17 +277,20 @@ Before proceeding with the installation, ensure that you have the following prer
 
 4. **Start Airflow using Docker Compose:**
    For the first run, use the following command to build and run the airflow docker.
+
    ```bash
    docker-compose up -d --build
    ```
+
    After `--build` once, you can rerun the docker with simply entering into your terminal:
+
    ```bash
-   dockercompose up -d
+   dockercompose up -d --build
    ```
 
-6. **Make sure docker is enabled in the windows firewall.**
+5. **Make sure docker is enabled in the windows firewall.**
 
-7. **Access Airflow web interface:**
+6. **Access Airflow web interface:**
    - Once the services are up and running, you can access the Airflow web interface at [http://localhost:8080](http://localhost:8080).
    - Use the following credentials to log in:
      - **Username:** airflow
@@ -328,23 +332,24 @@ brew services start grafana
 http://localhost:3000/
 
 username: admin
-Password: admin 
+Password: admin
 
-you will be re-directed to create a new password 
+you will be re-directed to create a new password
 
 4. **Configure your first data source:**
 
 In the grafana interface click on `Add  your first data source` and choose a data source type for our case it's `Type: PostgreSQL`
 
- Then fill the fields:
+Then fill the fields:
 
- Name: name to choose for the data source 
+Name: name to choose for the data source
 
 #### Connection:
+
 Host URL: localhost:5432
 Database name: wine_quality
 
-#### Authentication: 
+#### Authentication:
 
 It's the same as in pgadmin:
 username: postgres
@@ -354,11 +359,11 @@ password: dependes on what did you put when creating the server database of wine
 
 5. **Create your first dashboard:**
 
-To start your new dashboard by adding a visualization: 
+To start your new dashboard by adding a visualization:
 
 ### Prerequisites:
 
-Run the fastAPI server 
+Run the fastAPI server
 Run the Streamlit App
 Make sure you have values in the table in pgadmin
 
@@ -366,7 +371,6 @@ Then you click on add visualization:
 
 1- Select a data source that you already created in the previous step
 2- Go to code and put your query: for our first test to create `Histogram of Predictions `
-
 
 ```ini
 SELECT
@@ -377,8 +381,6 @@ WHERE timestamp >= NOW() - INTERVAL '1 day'
 GROUP BY prediction
 ORDER BY prediction;
 ```
-
-
 
 ## Contributors
 
