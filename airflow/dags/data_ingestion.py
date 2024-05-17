@@ -228,8 +228,9 @@ def ingest_wine_data():
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
                                     'unexpected_percent': result['result']['unexpected_percent'],
-                                    'unexpected_index_query': ['result']['unexpected_index_query'],
-                                    'observed_value': '',                                })
+                                    'unexpected_index_query': result['result']['unexpected_index_query'],
+                                    'observed_value': '',                                 
+                                })
                         else: 
                             validation_result['correct_formats'].append({
                                 'expectation': result['expectation_config']['expectation_type']

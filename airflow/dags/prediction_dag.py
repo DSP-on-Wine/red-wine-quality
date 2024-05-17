@@ -8,7 +8,7 @@ import requests
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from airflow.exception import AirflowSkipException
+from airflow.exceptions import AirflowSkipException
 
 ## TODO:
 # see how to read DB info from .env file

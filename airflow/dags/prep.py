@@ -409,7 +409,25 @@
 from datetime import datetime
 
 
-input_data =  {'to_split': 0, 'file_path': '/opt/***/temp_data/data_chunk_148.csv', 'data_issues': [{'expectation': 'expect_table_row_count_to_be_between', 'result': {'observed_value': 8}}, {'expectation': 'expect_table_columns_to_match_ordered_list', 'result': {'observed_value': ['index', 'fixed acidity', 'volatile acidity', 'citric acid', 'residual sugar', 'chlorides', 'free sulfur dioxide', 'total sulfur dioxide', 'density', 'pH', 'sulphates', 'alcohol', 'quality']}}, {'column': 'alcohol', 'expectation': 'expect_column_to_exist'}, {'column': 'pH', 'expectation': 'expect_column_to_exist'}, {'column': 'chlorides', 'expectation': 'expect_column_to_exist'}, {'column': 'id', 'expectation': 'expect_column_to_exist'}], 'timestamp': 'datetime.datetime(2024, 5, 16, 15, 16, 36, 213205)', 'correct_formats': []}
+input_data =  {'to_split': 0, 
+               'file_path': '/opt/***/temp_data/data_chunk_148.csv', 
+               'data_issues': [
+                   {'expectation': 'expect_table_row_count_to_be_between', 
+                    'result': {'observed_value': 8}}, 
+                    {'expectation': 'expect_table_columns_to_match_ordered_list', 
+                     'result': {
+                         'observed_value': [
+                             'index', 'fixed acidity', 'volatile acidity', 'citric acid', 'residual sugar', 'chlorides', 'free sulfur dioxide', 'total sulfur dioxide', 'density', 'pH', 'sulphates', 'alcohol', 'quality']
+                             }
+                    }, 
+                    {'column': 'alcohol', 'expectation': 'expect_column_to_exist'}, 
+                    {'column': 'pH', 'expectation': 'expect_column_to_exist'}, 
+                    {'column': 'chlorides', 'expectation': 'expect_column_to_exist'}, 
+                    {'column': 'id', 'expectation': 'expect_column_to_exist'}
+                ], 
+                'timestamp': 'datetime.datetime(2024, 5, 16, 15, 16, 36, 213205)', 
+                'correct_formats': []
+            }
 
 def extract_values(data):
     print ("Extracting validated data.")
@@ -421,18 +439,19 @@ def extract_values(data):
     data_success = []
     for issue in data_issues:
         indices = ""
-        for index in issue['result']['unexpected_index_list']:
-            indices += str(index['index'])
+        # for index in issue['result']['unexpected_index_list']:
+        #     indices += str(index['index'])
+        # percent = issue['result'].get(['unexpected_percent'], '') 
+        query = (issue['result']['unexpected_index_query'] if issue['result']['unexpected_index_query'] else "")
+        observed = ''
         data_error_entry = {
-           'file_name': file_path,
-           'column_name': issue['column'],
-            'expectation': issue['expectation'],
-            'element_count': issue['result']['element_count'],
-            'unexpected_count': issue['result']['unexpected_count'],
-            'unexpected_percent': issue['result']['unexpected_percent'],
-            'unexpected_index_query': issue['result']['unexpected_index_query'],
-            'unexpected_index_list': indices,
-            'timestamp': 'time_stamp'
+                'file_name': file_path,
+                'column_name': issue['column'],
+                'expectation': issue['expectation'],
+                'unexpected_percent': 'percent',
+                'unexpected_index_query': query,
+                'observed_value': observed,
+                'timestamp': time_stamp
             }
         data_errors.append(data_error_entry)
         print(f"Found {len(data_errors)} data errors.")
@@ -448,4 +467,4 @@ def extract_values(data):
 
     return data_errors, data_success
 
-print(extract_values(input_data))
+# print(extract_values(input_data))
