@@ -8,7 +8,7 @@ import requests
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from airflow.exception import AirflowSkipException
+from airflow.exceptions import AirflowSkipException
 
 # TODO:
 # see how to read DB info from .env file
@@ -131,8 +131,8 @@ def wine_prediction_dag():
                         # Save file name in the database
                         session.add(OldFile(filename=file))
                         session.commit()
-
-                        output_list.append(output)  # Append output for this file
+                        # Append output for this file
+                        output_list.append(output)
                     else:
                         output_list.append(f"Error: {response.text}")
 
