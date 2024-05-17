@@ -1,10 +1,10 @@
-name: my_databricks_checkpoint
+name: null_out_of_range_and_duplicate_checkpoint
 config_version: 1.0
 template_name:
 module_name: great_expectations.checkpoint
 class_name: Checkpoint
-run_name_template: '%Y%m%d-%H%M%S-my-run-name-template'
-expectation_suite_name: wine_expectation_suite
+run_name_template: '%Y%m%d-%H%M%S-out-of-range-and-duplicate-validation'
+expectation_suite_name: null_out_of_range_and_duplicate_suite
 batch_request: {}
 action_list:
   - name: store_validation_result

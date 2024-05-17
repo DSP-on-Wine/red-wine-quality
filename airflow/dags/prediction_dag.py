@@ -8,6 +8,7 @@ import requests
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from airflow.exception import AirflowSkipException
 
 # TODO:
 # see how to read DB info from .env file
@@ -144,6 +145,7 @@ def wine_prediction_dag():
                 session.close()
         else:
             logging.info("No files to make predictions.")
+            raise AirflowSkipException
 
     check_for_new_data_task = check_for_new_data()
     make_predictions_task = make_predictions(check_for_new_data_task)
