@@ -213,21 +213,29 @@ def ingest_wine_data():
                             if (result['result']['unexpected_percent'] == 100.0):
                                 logging.warning("Found all rows to be bad.")
                                 move_file(file_path, BAD_DATA_DIR)   
+                                indices = []
+                                for index in result['result']['unexpected_index_list']:
+                                    indices.append(index['index'])
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
                                     'unexpected_percent': result['result']['unexpected_percent'],
-                                    'unexpected_index_query': ['result']['unexpected_index_query'],
+                                    'unexpected_index_list': indices,
+                                    'unexpected_index_query': result['result']['unexpected_index_query'],
                                     'observed_value': '',
                                 })
                             else : 
                                 logging.info("Some rows are good.")
                                 validation_result['to_split'] = 1 
                                 print(f'val to split is true, {validation_result['to_split']}.')
+                                indices = []
+                                for index in result['result']['unexpected_index_list']:
+                                    indices.append(index['index'])
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
                                     'unexpected_percent': result['result']['unexpected_percent'],
+                                    'unexpected_index_list': indices,
                                     'unexpected_index_query': result['result']['unexpected_index_query'],
                                     'observed_value': '',                                 
                                 })
@@ -258,13 +266,13 @@ def ingest_wine_data():
     @task
     def split_and_save_data(file_path: str, validation_task) -> None:
         if validation_task and validation_task['to_split'] == 1:
-            bad_rows = []
-            data_issues = validation_task['data_issues']
-            for issue in data_issues:
-                indices = issue['result']['partial_unexpected_index_list']
-                print(f"Validation results: {issue['result']}")
-                for i in indices:
-                    bad_rows.append(int(i['index']))
+            bad_rows = validate_task['data_issues']['unexpected_index_list']
+            # data_issues = validation_task['data_issues']
+            # for issue in data_issues:
+            #     indices = issue['result']['partial_unexpected_index_list']
+            #     print(f"Validation results: {issue['result']}")
+            #     for i in indices:
+            #         bad_rows.append(int(i['index']))
 
             logging.info(f"Splitting and saving data for file: {file_path}")
             logging.warning(f"Bad index results: {bad_rows}")
