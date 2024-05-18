@@ -82,6 +82,7 @@ def wine_prediction_dag():
                 logging.info(
                     "No new ingested files found in good_data directory."
                     )
+                raise AirflowSkipException
             return new_files
         finally:
             session.close()

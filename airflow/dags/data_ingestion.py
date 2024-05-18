@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import random
 import logging
@@ -31,11 +32,9 @@ class DataError(Base):
     file_name = db.Column(db.String)
     column_name = db.Column(db.String)
     expectation = db.Column(db.String)
-    element_count = db.Column(db.Integer)
-    unexpected_count = db.Column(db.Integer)
     unexpected_percent = db.Column(db.Float)
     unexpected_index_query = db.Column(db.String)
-    unexpected_index_list = db.Column(db.ARRAY(db.String))
+    observed_value = db.Column(db.String)
     timestamp = db.Column(db.TIMESTAMP)
 
 
@@ -56,7 +55,6 @@ class CorrectFormats(Base):
         tags=['data_ingestion']
 )
 def ingest_wine_data():
-    ## move to temp dir, return new dir.
     @task
     def read_data() -> str:
         raw_files = os.listdir(RAW_DATA_DIR)
@@ -81,19 +79,22 @@ def ingest_wine_data():
 
     @task
     def validate_data(file_path: str):
-        if file_path:  ## TODO - not just checking filepath, check if filepath exists in in raw-data
+        if file_path:  
             print(f"Validating file {file_path}...")
-            # move_file(file_path, TEMP_DATA_DIR)
             try:
                 context_root_dir = "/opt/airflow/great_expectations"
                 context = gx.get_context(context_root_dir=context_root_dir)
 
-                spark = SparkSession.builder.getOrCreate()
-                dataframe_datasource = context.sources.add_or_update_spark(
-                    name="my_spark_in_memory_datasource", ## TODO - change the name
-                )
+                # spark = SparkSession.builder.getOrCreate()
+                # dataframe_datasource = context.sources.add_or_update_spark(
+                #     name="my_spark_in_memory_datasource", ## TODO - change the name
+                # )
 
-                df = spark.read.csv(file_path, header=True)
+                # df = spark.read.csv(file_path, header=True)
+                dataframe_datasource = context.sources.add_or_update_pandas(
+                    name="my_pandas_data_validation",  # Changed the name to be more descriptive
+                )
+                df = pd.read_csv(file_path)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
                     name="data_chunk",
                     dataframe=df,
@@ -101,7 +102,7 @@ def ingest_wine_data():
 
                 batch_request = dataframe_asset.build_batch_request()
                 row_and_column_suite = context.get_expectation_suite(expectation_suite_name='row_and_column_suite')
-                out_of_range_and_duplicate_suite = context.get_expectation_suite(expectation_suite_name='null_out_of_range_and_duplicate_suite')
+                out_of_range_and_duplicate_suite = context.get_expectation_suite(expectation_suite_name='null_out_of_range_suite')
 
 
                 row_and_column_checkpoint = Checkpoint(
@@ -139,8 +140,8 @@ def ingest_wine_data():
                 results = row_and_column_result
                 print(results)
 
-                validation_result = {
-                    "to_split": 0,
+                validation_result = { 
+                   "to_split": 0,
                     "file_path": file_path,
                     "data_issues": [],
                     "timestamp": datetime.now(),
@@ -159,11 +160,17 @@ def ingest_wine_data():
                             validation_result['data_issues'].append({
                                 'column': result['expectation_config']['kwargs']['column'],
                                 'expectation': result['expectation_config']['expectation_type'],
+                                'unexpected_percent': '',
+                                'unexpected_index_query': '',
+                                'observed_value': ''
                             })
                         else: 
                             validation_result['data_issues'].append({
+                                'column': '',
                                 'expectation': result['expectation_config']['expectation_type'],
-                                'result': result['result'],
+                                'unexpected_percent': '',
+                                'unexpected_index_query': '',
+                                'observed_value': result['result']['observed_value'],
                             })
                     return validation_result ## it has to break
                 else: 
@@ -210,20 +217,33 @@ def ingest_wine_data():
                             if (result['result']['unexpected_percent'] == 100.0):
                                 logging.warning("Found all rows to be bad.")
                                 move_file(file_path, BAD_DATA_DIR)   
+                                indices = []
+                                for index in result['result']['partial_unexpected_index_list']:
+                                    indices.append(index['index'])
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
-                                    'result': result['result'],
+                                    'unexpected_percent': result['result']['unexpected_percent'],
+                                    'unexpected_index_list': result['result']['unexpected_index_list'],
+                                    'unexpected_index_query': result['result']['unexpected_index_query'],
+                                    'observed_value': '',
                                 })
                             else : 
                                 logging.info("Some rows are good.")
                                 validation_result['to_split'] = 1 
                                 print(f'val to split is true, {validation_result['to_split']}.')
 
+                                indices = []
+                                for index in result['result']['partial_unexpected_index_list']:
+                                    indices.append(index['index'])
+                                logging.info(f"Found indexes {indices} bad.")
                                 validation_result['data_issues'].append({
                                     'column': result['expectation_config']['kwargs']['column'],
                                     'expectation': result['expectation_config']['expectation_type'],
-                                    'result': result['result'],
+                                    'unexpected_percent': result['result']['unexpected_percent'],
+                                    'unexpected_index_list': result['result']['unexpected_index_list'],
+                                    'unexpected_index_query': result['result']['unexpected_index_query'],
+                                    'observed_value': '',                                 
                                 })
                         else: 
                             validation_result['correct_formats'].append({
@@ -251,12 +271,14 @@ def ingest_wine_data():
 
     @task
     def split_and_save_data(file_path: str, validation_task) -> None:
+        logging.info(validate_task)
         if validation_task and validation_task['to_split'] == 1:
+            logging.info(f"Complete issues: {validate_task['data_issues']}")
             bad_rows = []
             data_issues = validation_task['data_issues']
             for issue in data_issues:
-                indices = issue['result']['partial_unexpected_index_list']
-                print(f"Validation results: {issue['result']}")
+                indices = issue.get('unexpected_index_list', [])
+                logging.info(f"Validation results: {issue}")
                 for i in indices:
                     bad_rows.append(int(i['index']))
 
@@ -264,8 +286,12 @@ def ingest_wine_data():
             logging.warning(f"Bad index results: {bad_rows}")
 
             df = pd.read_csv(file_path)
-            good_df = df.loc[~df['index'].isin(bad_rows)]
-            bad_df = df.loc[df['index'].isin(bad_rows)]
+            df.set_index('index', inplace=True)    
+
+            good_df = df.loc[~df.index.isin(bad_rows)]
+            bad_df = df.loc[df.index.isin(bad_rows)]
+            logging.info(f"Returned bad df as {bad_df}")
+            logging.info(f"Returned good df as {good_df}")
 
             file_name = os.path.basename(file_path).split('.')[0]
 
@@ -282,8 +308,7 @@ def ingest_wine_data():
                 logging.info(f"The file {file_path} has been deleted.")
 
         else:
-            
-            print(f"No data issues found for file {file_path}")
+            print(f"No unhandled data issues found for file {file_path}")
             raise AirflowSkipException
 
 
@@ -297,18 +322,14 @@ def ingest_wine_data():
         data_errors = []
         data_success = []
         for issue in data_issues:
-            indices = ""
-            for index in issue['result']['unexpected_index_list']:
-                indices += str(index['index'])
+
             data_error_entry = {
                 'file_name': file_path,
                 'column_name': issue['column'],
                 'expectation': issue['expectation'],
-                'element_count': issue['result']['element_count'],
-                'unexpected_count': issue['result']['unexpected_count'],
-                'unexpected_percent': issue['result']['unexpected_percent'],
-                'unexpected_index_query': issue['result']['unexpected_index_query'],
-                'unexpected_index_list': indices,
+                'unexpected_percent': issue['unexpected_percent'],
+                'unexpected_index_query': issue['unexpected_index_query'],
+                'observed_value': issue['observed_value'],
                 'timestamp': time_stamp
             }
             data_errors.append(data_error_entry)
@@ -328,60 +349,60 @@ def ingest_wine_data():
 
     def insert_data_to_database(data_to_save, session, is_issue: bool):
         try:
-            if is_issue:
-                print("Inserting issue.")
-                data_errors = []
-                for entry in data_to_save:
-                    error_entry = {
-                        'file_name': entry['file_name'],
-                        'column_name': entry['column_name'],
-                        'expectation': entry['expectation'],
-                        'element_count': entry['element_count'],
-                        'unexpected_count': entry['unexpected_count'],
-                        'unexpected_percent': entry['unexpected_percent'],
-                        'unexpected_index_query': entry['unexpected_index_query'],
-                        'unexpected_index_list': entry['unexpected_index_list'],
-                        'timestamp': entry['timestamp']
-                    }
-                    data_error = DataError(**error_entry)
-                    data_errors.append(data_error)
+            print("Inserting issue.")
+            data_errors = []
+            for entry in data_to_save:
+                error_entry = {
+                    'file_name': entry['file_name'],
+                    'column_name': entry['column_name'],
+                    'expectation': entry['expectation'],
+                    'unexpected_percent': entry['unexpected_percent'],
+                    'unexpected_index_query': entry['unexpected_index_query'],
+                    'observed_value': entry['observed_value'],
+                    'timestamp': entry['timestamp']
+                }
+                data_error = DataError(**error_entry)
+                data_errors.append(data_error)
 
-                session.bulk_save_objects(data_errors)
-                session.commit()
-                print(f"{len(data_errors)} values inserted successfully.")
+            session.bulk_save_objects(data_errors)
+            session.commit()
+            print(f"{len(data_errors)} values inserted successfully.")
+            print("Inserting success.")
 
-            else:
-                print("Inserting success.")
-                correct_formats_list = []
-                for entry in data_to_save:
-                    correct_entry = {
-                        'file_name': entry['file_name'],
-                        'expectation': entry['expectation'],
-                        'timestamp': entry['timestamp']
-                    }
-                    correct_format = CorrectFormats(**correct_entry)
-                    correct_formats_list.append(correct_format)
+            correct_formats_list = []
+            for entry in data_to_save:
+                correct_entry = {
+                    'file_name': entry['file_name'],
+                    'expectation': entry['expectation'],
+                    'timestamp': entry['timestamp']
+                }
+                correct_format = CorrectFormats(**correct_entry)
+                correct_formats_list.append(correct_format)
 
-                session.bulk_save_objects(correct_formats_list)
-                session.commit()
-                print(f"{len(correct_formats_list)} values inserted successfully.")
+            session.bulk_save_objects(correct_formats_list)
+            session.commit()
+            print(f"{len(correct_formats_list)} values inserted successfully.")
+
         except Exception as e:
             print("Error inserting values:", e)
 
     @task
     def send_alerts(validation_result):
         if validation_result:
-            validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
+            validation_result_url = "file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#"
             print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
+                timestamp = validation_result.get('timestamp', datetime.now())
+                content += f"Timestamp: {timestamp}\n\n"
+                content += f"On file: {validation_result['file_path']} found the following issues:\n\n"
                 for issue in validation_result['data_issues']:
-                    content += f"""
-                    On file {validation_result['file_path']} found {issue['result']['unexpected_percent']}% errors.
-                    """
+                    content += f"Expectation: {issue['expectation']}\n"
+                    if 'column' in issue:
+                        content += f"Column: {issue['column']}\n"
+                    content += "-"*30 + "\n"
             else: 
-                ## TODO -- find a way to skip this task, return
-                pass      
+                raise AirflowSkipException     
 
             message = {
                 "@type": "MessageCard",
@@ -389,20 +410,20 @@ def ingest_wine_data():
                 "summary": "Summary",
                 "sections": [{
                     "activityTitle": "Data quality report",
-                    "activitySubtitle": "Errors found:",
+                    "activitySubtitle": "--"*40,
                     "facts": [
                     {
-                        "name": "Result",
+                        "name": "\t\t",
                         "value": content
                     }
                     ],
                 }],
                 "potentialAction": [{
-                    "@type": "OpenUri",
+                    "@type": "HttpPOST",
                     "name": "Link to the data docs",
                     "targets": [{
-                    "os": "default",
-                    "uri": f"{validation_result_url}"
+                        "os": "default",
+                        "uri": validation_result_url
                     }]
                 }]
             }
