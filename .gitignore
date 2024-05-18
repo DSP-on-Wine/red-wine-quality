@@ -162,3 +162,4 @@ data/
 raw_data/
 good_data/
 bad_data/
+airflow/dags/ingestion_lock.txt
