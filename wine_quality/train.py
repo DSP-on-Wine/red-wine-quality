@@ -33,4 +33,3 @@ def build_model(data: pd.DataFrame) -> dict:
     predictions = model.predict(X_val_processed)
 
     return {'rmlse': compute_rmse(y_val, predictions)}
-
