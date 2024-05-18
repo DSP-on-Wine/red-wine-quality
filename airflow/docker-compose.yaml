@@ -83,6 +83,7 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
 
+
 services:
   postgres:
     image: postgres:13
@@ -98,6 +99,11 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+  
+
+   
+
+
 
   redis:
     image: redis:7.2-bookworm
@@ -286,3 +292,7 @@ services:
 
 volumes:
   postgres-db-volume:
+  
+
+
+  

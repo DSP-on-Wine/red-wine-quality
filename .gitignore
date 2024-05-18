@@ -161,4 +161,7 @@ cython_debug/
 data/
 raw_data/
 good_data/
+output_data/
+# ./
+grafana-v10.4.2/ 
 bad_data/
