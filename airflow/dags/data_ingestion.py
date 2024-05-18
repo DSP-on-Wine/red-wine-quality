@@ -386,7 +386,7 @@ def ingest_wine_data():
     @task
     def send_alerts(validation_result):
         if validation_result:
-            validation_result_url = os.path.join("file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#")
+            validation_result_url = "file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#"
             print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
@@ -407,18 +407,21 @@ def ingest_wine_data():
                 "summary": "Summary",
                 "sections": [{
                     "activityTitle": "Data quality report",
-                    "activitySubtitle": "~"*15,
+                    "activitySubtitle": "--"*40,
                     "facts": [
                     {
-                        "name": ":"*5,
+                        "name": "\t\t",
                         "value": content
                     }
                     ],
                 }],
-                "actions": [{
-                    "@type": "Action.OpenUrl",
-                    "title": "Link to the data docs",
-                    "url": validation_result_url
+                "potentialAction": [{
+                    "@type": "HttpPOST",
+                    "name": "Link to the data docs",
+                    "targets": [{
+                        "os": "default",
+                        "uri": validation_result_url
+                    }]
                 }]
             }
 
