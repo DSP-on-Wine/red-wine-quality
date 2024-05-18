@@ -55,8 +55,8 @@ class InputData(BaseModel):
 
 
 @dag(
-        schedule_interval=timedelta(seconds=90),
-        start_date=datetime(2024, 5, 9),
+        schedule_interval=timedelta(seconds=30),
+        start_date=datetime(2024, 5, 18),
         catchup=False,
         tags=['data_ingestion']
         )

@@ -33,6 +33,7 @@ class DataError(Base):
     unexpected_percent = db.Column(db.Float)
     unexpected_index_query = db.Column(db.String)
     observed_value = db.Column(db.String)
+    criticality = db.Column(db.String)
     timestamp = db.Column(db.TIMESTAMP)
 
 
@@ -46,7 +47,7 @@ class CorrectFormats(Base):
 
 
 @dag(
-        schedule_interval=timedelta(seconds=90),
+        schedule_interval=timedelta(seconds=40),
         start_date=datetime(2024, 5, 9),
         catchup=False,
         tags=['data_ingestion']
@@ -156,6 +157,7 @@ def ingest_wine_data():
 
                 validation_result = {
                     "to_split": 0,
+                    "criticality": "",
                     "file_path": file_path,
                     "data_issues": [],
                     "timestamp": datetime.now(),
@@ -170,6 +172,7 @@ def ingest_wine_data():
                         returned_result = result['validation_result']
                     for result in returned_result['results']:
                         print(f'Result was: {result['result']}')
+                        validation_result['criticality'] = 'High'
                         if (result['expectation_config']['expectation_type'] == 'expect_column_to_exist'):
                             validation_result['data_issues'].append({
                                 'column': result['expectation_config']['kwargs']['column'],
@@ -248,10 +251,17 @@ def ingest_wine_data():
                                     'unexpected_index_query': result['result']['unexpected_index_query'],
                                     'observed_value': '',
                                 })
+                            
                             else:
                                 logging.info("Some rows are good.")
                                 validation_result['to_split'] = 1
                                 print(f'val to split is true, {validation_result['to_split']}.')
+                                if (result['result']['unexpected_percent'] >= 50.0):
+                                    validation_result['criticality'] = 'High'
+                                elif (result['result']['unexpected_percent'] >= 25.0):
+                                    validation_result['criticality'] = 'Medium'
+                                else:
+                                    validation_result['criticality'] = 'Low'
 
                                 indices = []
                                 for index in result['result']['partial_unexpected_index_list']:
@@ -337,6 +347,7 @@ def ingest_wine_data():
         data_issues = data.get('data_issues', [])
         time_stamp = data.get('timestamp')
         correct_formats = data.get('correct_formats', [])
+        criticality = data.get('criticality', "")
 
         data_errors = []
         data_success = []
@@ -349,6 +360,7 @@ def ingest_wine_data():
                 'unexpected_percent': issue['unexpected_percent'],
                 'unexpected_index_query': issue['unexpected_index_query'],
                 'observed_value': issue['observed_value'],
+                'criticality': criticality,
                 'timestamp': time_stamp
             }
             data_errors.append(data_error_entry)
@@ -377,6 +389,7 @@ def ingest_wine_data():
                     'unexpected_percent': entry['unexpected_percent'],
                     'unexpected_index_query': entry['unexpected_index_query'],
                     'observed_value': entry['observed_value'],
+                    'criticality': entry['criticality'],
                     'timestamp': entry['timestamp']
                 }
                 data_error = DataError(**error_entry)
@@ -425,7 +438,7 @@ def ingest_wine_data():
                 content += f"Timestamp: {timestamp}\n\n"
                 content += f"On file: {validation_result['file_path']} found the following issues:\n\n"
                 for issue in validation_result['data_issues']:
-                    content += f"Expectation: {issue['expectation']}\n\n"
+                    content += f"Expectation: {issue['expectation']}\n\nCriticality: {validation_result['criticality']}\n\n"
                     if issue['column'] != '':
                         content += f"Column: {issue['column']}\n\n\n"
                     content += "-"*30 + "\n"
