@@ -5,7 +5,6 @@ import logging
 import shutil
 import pandas as pd
 import requests
-from pyspark.sql import SparkSession
 from airflow.decorators import dag, task
 from datetime import datetime, timedelta
 import great_expectations as gx
@@ -49,7 +48,7 @@ class CorrectFormats(Base):
 
 
 @dag(
-        schedule_interval=timedelta(seconds=120),
+        schedule_interval=timedelta(seconds=90),
         start_date=datetime(2024, 5, 9),
         catchup=False,
         tags=['data_ingestion']
@@ -390,6 +389,16 @@ def ingest_wine_data():
     def send_alerts(validation_result):
         if validation_result:
             validation_result_url = "file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#"
+            file_path = validation_result['file_path']
+            file_name = os.path.basename(file_path).split('.')[0]
+            if validation_result['to_split'] == 1:
+                file_name = f'{file_name[:-3]}_bad.csv'
+                logging.info(f"File name changed to {file_name}")
+            else:
+                # file_name = f'{file_name[:-3]}.csv'
+                logging.info(f'Filename kept as {file_name}')
+            file_path = f'{BAD_DATA_DIR}/{file_name}'
+            logging.info(f'Resulting file path is in: {file_path}')
             print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
@@ -397,9 +406,9 @@ def ingest_wine_data():
                 content += f"Timestamp: {timestamp}\n\n"
                 content += f"On file: {validation_result['file_path']} found the following issues:\n\n"
                 for issue in validation_result['data_issues']:
-                    content += f"Expectation: {issue['expectation']}\n"
-                    if 'column' in issue:
-                        content += f"Column: {issue['column']}\n"
+                    content += f"Expectation: {issue['expectation']}\n\n"
+                    if issue['column'] != '':
+                        content += f"Column: {issue['column']}\n\n\n"
                     content += "-"*30 + "\n"
             else: 
                 raise AirflowSkipException     
@@ -441,7 +450,8 @@ def ingest_wine_data():
             logging.warning("No validation found.")
     @task
     def save_data_errors(validation_results: dict) -> None:
-        if validation_results['data_issues']:
+        data_issues = validation_results['data_issues']
+        if data_issues:
 
             try:
                 engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')

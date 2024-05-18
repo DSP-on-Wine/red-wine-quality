@@ -29,7 +29,7 @@ class OldFile(Base):
 
 # Database connection
 DB_USER = 'postgres'
-DB_PASSWORD = '123'
+DB_PASSWORD = 'postgres'
 DB_HOST = 'host.docker.internal'
 DB_PORT = '5432'
 DB_NAME = 'wine_quality'
@@ -55,7 +55,7 @@ class InputData(BaseModel):
 
 
 @dag(
-        schedule_interval=timedelta(seconds=150),
+        schedule_interval=timedelta(seconds=90),
         start_date=datetime(2024, 5, 9),
         catchup=False,
         tags=['data_ingestion']
