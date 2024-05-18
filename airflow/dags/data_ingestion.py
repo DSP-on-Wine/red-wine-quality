@@ -283,6 +283,8 @@ def ingest_wine_data():
             logging.warning(f"Bad index results: {bad_rows}")
 
             df = pd.read_csv(file_path)
+            df.set_index('index', inplace=True)    
+
             good_df = df.loc[~df.index.isin(bad_rows)]
             bad_df = df.loc[df.index.isin(bad_rows)]
             logging.info(f"Returned bad df as {bad_df}")
@@ -344,43 +346,39 @@ def ingest_wine_data():
 
     def insert_data_to_database(data_to_save, session, is_issue: bool):
         try:
-            if is_issue:
-                print("Inserting issue.")
-                data_errors = []
-                for entry in data_to_save:
-                    error_entry = {
-                        'file_name': entry['file_name'],
-                        'column_name': entry['column_name'],
-                        'expectation': entry['expectation'],
-                        'element_count': entry['element_count'],
-                        'unexpected_count': entry['unexpected_count'],
-                        'unexpected_percent': entry['unexpected_percent'],
-                        'unexpected_index_query': entry['unexpected_index_query'],
-                        'unexpected_index_list': entry['unexpected_index_list'],
-                        'timestamp': entry['timestamp']
-                    }
-                    data_error = DataError(**error_entry)
-                    data_errors.append(data_error)
+            print("Inserting issue.")
+            data_errors = []
+            for entry in data_to_save:
+                error_entry = {
+                    'file_name': entry['file_name'],
+                    'column_name': entry['column_name'],
+                    'expectation': entry['expectation'],
+                    'unexpected_percent': entry['unexpected_percent'],
+                    'unexpected_index_query': entry['unexpected_index_query'],
+                    'observed_value': entry['observed_value'],
+                    'timestamp': entry['timestamp']
+                }
+                data_error = DataError(**error_entry)
+                data_errors.append(data_error)
 
-                session.bulk_save_objects(data_errors)
-                session.commit()
-                print(f"{len(data_errors)} values inserted successfully.")
+            session.bulk_save_objects(data_errors)
+            session.commit()
+            print(f"{len(data_errors)} values inserted successfully.")
+            print("Inserting success.")
 
-            else:
-                print("Inserting success.")
-                correct_formats_list = []
-                for entry in data_to_save:
-                    correct_entry = {
-                        'file_name': entry['file_name'],
-                        'expectation': entry['expectation'],
-                        'timestamp': entry['timestamp']
-                    }
-                    correct_format = CorrectFormats(**correct_entry)
-                    correct_formats_list.append(correct_format)
+            correct_formats_list = []
+            for entry in data_to_save:
+                correct_entry = {
+                    'file_name': entry['file_name'],
+                    'expectation': entry['expectation'],
+                    'timestamp': entry['timestamp']
+                }
+                correct_format = CorrectFormats(**correct_entry)
+                correct_formats_list.append(correct_format)
 
-                session.bulk_save_objects(correct_formats_list)
-                session.commit()
-                print(f"{len(correct_formats_list)} values inserted successfully.")
+            session.bulk_save_objects(correct_formats_list)
+            session.commit()
+            print(f"{len(correct_formats_list)} values inserted successfully.")
 
         except Exception as e:
             print("Error inserting values:", e)
@@ -388,13 +386,18 @@ def ingest_wine_data():
     @task
     def send_alerts(validation_result):
         if validation_result:
-            validation_result_url = os.path.join("/opt/airflow/great_expectations/uncommitted/data_docs/local_site/index.html")
+            validation_result_url = os.path.join("file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#")
             print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
-                content += "On file {validation_result['file_path']} found"
+                timestamp = validation_result.get('timestamp', datetime.now())
+                content += f"Timestamp: {timestamp}\n\n"
+                content += f"On file: {validation_result['file_path']} found the following issues:\n\n"
                 for issue in validation_result['data_issues']:
-                    content += f"""Problem: {issue}"""
+                    content += f"Expectation: {issue['expectation']}\n"
+                    if 'column' in issue:
+                        content += f"Column: {issue['column']}\n"
+                    content += "-"*30 + "\n"
             else: 
                 raise AirflowSkipException     
 
@@ -404,21 +407,18 @@ def ingest_wine_data():
                 "summary": "Summary",
                 "sections": [{
                     "activityTitle": "Data quality report",
-                    "activitySubtitle": "Errors found:",
+                    "activitySubtitle": "~"*15,
                     "facts": [
                     {
-                        "name": "Result",
+                        "name": ":"*5,
                         "value": content
                     }
                     ],
                 }],
-                "potentialAction": [{
-                    "@type": "OpenUri",
-                    "name": "Link to the data docs",
-                    "targets": [{
-                    "os": "default",
-                    "uri": f"{validation_result_url}"
-                    }]
+                "actions": [{
+                    "@type": "Action.OpenUrl",
+                    "title": "Link to the data docs",
+                    "url": validation_result_url
                 }]
             }
 
