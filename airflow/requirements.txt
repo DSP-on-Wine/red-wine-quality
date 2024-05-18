@@ -1,0 +1,4 @@
+great_expectations==0.18.13
+pyspark==3.5.1
+asyncpg==0.29.0
+sqlalchemy

@@ -1,0 +1,39 @@
+1 - Monitoring of Data Error and Success Rates
+
+SELECT
+  date_trunc('minute', de.timestamp) AS time,
+  CAST((SUM(de.unexpected_percent) / 100.0) AS DECIMAL(10,2)) AS data_error_ratio,
+  COALESCE(COUNT(ds.id), 0) AS data_success_count
+FROM
+  data_errors de
+  LEFT JOIN data_success ds
+    ON date_trunc('minute', de.timestamp) = date_trunc('minute', ds.timestamp)
+GROUP BY
+  time
+ORDER BY
+  time;
+
+2 - Data Errors by 30-Minute Intervals
+SELECT
+  TO_CHAR(
+    TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM timestamp) / 1800) * 1800),
+    'YYYY-MM-DD HH24:MI'
+  ) AS time_interval,
+  COUNT(*) AS count
+FROM
+  data_errors
+WHERE
+  timestamp >= NOW() - INTERVAL '5 hour'
+GROUP BY
+  TO_CHAR(
+    TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM timestamp) / 1800) * 1800),
+    'YYYY-MM-DD HH24:MI'
+  )
+ORDER BY
+  time_interval;
+
+3 - bar chart distribution of errors by type
+select count(*), expectation from data_errors 
+WHERE
+timestamp >= NOW() - INTERVAL '2 day'
+group by expectation
