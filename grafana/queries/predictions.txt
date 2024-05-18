@@ -51,3 +51,33 @@ GROUP BY
   time
 ORDER BY
   time;
+
+5. Prediction frequency
+SELECT
+    CASE
+        WHEN prediction >= 0 AND prediction < 1 THEN '0 to 1'
+        WHEN prediction >= 1 AND prediction < 2 THEN '1 to 2'
+        WHEN prediction >= 2 AND prediction < 3 THEN '2 to 3'
+        WHEN prediction >= 3 AND prediction < 4 THEN '3 to 4'
+        WHEN prediction >= 4 AND prediction < 5 THEN '4 to 5'
+        WHEN prediction >= 5 AND prediction < 6 THEN '5 to 6'
+        WHEN prediction >= 6 AND prediction < 7 THEN '6 to 7'
+        WHEN prediction >= 7 AND prediction < 8 THEN '7 to 8'
+        WHEN prediction >= 8 AND prediction < 9 THEN '8 to 9'
+        WHEN prediction >= 9 AND prediction < 10 THEN '9 to 10'
+        ELSE 'Out of range'
+    END AS prediction_range,
+    COUNT(*) AS frequency
+FROM
+    predictions
+GROUP BY
+    prediction_range
+ORDER BY
+    prediction_range;
+
+
+
+
+6. Distribution of predictions by source:
+
+select count(*), source from predictions GROUP BY source
