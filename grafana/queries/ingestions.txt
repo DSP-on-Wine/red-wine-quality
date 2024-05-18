@@ -37,3 +37,39 @@ select count(*), expectation from data_errors
 WHERE
 timestamp >= NOW() - INTERVAL '2 day'
 group by expectation
+
+4. for Temporal Graph with the % of Invalid Data Samples Compared to Valid Data Samples in the Last 10 minutes
+
+SELECT
+  date_trunc('minute', timestamp) AS time,
+  SUM(CASE WHEN unexpected_percent > 0 THEN 1 ELSE 0 END)::FLOAT / COUNT(*) * 100 AS invalid_percentage,
+  SUM(CASE WHEN unexpected_percent = 0 THEN 1 ELSE 0 END)::FLOAT / COUNT(*) * 100 AS valid_percentage
+FROM (
+  SELECT 
+    id,
+    file_name,
+    column_name,
+    expectation,
+    unexpected_percent,
+    unexpected_index_query,
+    observed_value,
+    timestamp
+  FROM data_errors
+  UNION ALL
+  SELECT 
+    id,
+    file_name,
+    column_name,
+    expectation,
+    0.0 AS unexpected_percent, 
+    unexpected_index_query,
+    NULL AS observed_value,  
+    timestamp
+  FROM data_success
+) AS combined_data
+WHERE
+  timestamp >= NOW() - INTERVAL '10 minutes'
+GROUP BY
+  time
+ORDER BY
+  time;
