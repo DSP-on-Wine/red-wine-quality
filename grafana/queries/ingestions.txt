@@ -73,3 +73,79 @@ GROUP BY
   time
 ORDER BY
   time;
+
+5. Error count per day
+
+
+SELECT TO_CHAR(timestamp, 'YYYY-MM-DD') AS date, COUNT(*) AS count
+FROM data_errors
+GROUP BY TO_CHAR(timestamp, 'YYYY-MM-DD')
+order by TO_CHAR(timestamp, 'YYYY-MM-DD')
+
+
+6. Errors vs successes per day
+
+WITH errors_per_day AS (
+    SELECT 
+        TO_CHAR(timestamp, 'YYYY-MM-DD') AS date,
+        COUNT(*) AS error_count
+    FROM 
+        data_errors
+    GROUP BY 
+        TO_CHAR(timestamp, 'YYYY-MM-DD')
+),
+success_per_day AS (
+    SELECT 
+        TO_CHAR(timestamp, 'YYYY-MM-DD') AS date,
+        COUNT(*) AS success_count
+    FROM 
+        data_success
+    GROUP BY 
+        TO_CHAR(timestamp, 'YYYY-MM-DD')
+)
+SELECT 
+    COALESCE(e.date, s.date) AS date,
+    COALESCE(e.error_count, 0) AS error_count,
+    COALESCE(s.success_count, 0) AS success_count
+FROM 
+    errors_per_day e
+FULL OUTER JOIN 
+    success_per_day s
+ON 
+    e.date = s.date
+ORDER BY 
+    date;
+
+
+7. distribution of errors by type
+
+WITH errors_per_day AS (
+    SELECT 
+        TO_CHAR(timestamp, 'YYYY-MM-DD') AS date,
+        COUNT(*) AS error_count
+    FROM 
+        data_errors
+    GROUP BY 
+        TO_CHAR(timestamp, 'YYYY-MM-DD')
+),
+success_per_day AS (
+    SELECT 
+        TO_CHAR(timestamp, 'YYYY-MM-DD') AS date,
+        COUNT(*) AS success_count
+    FROM 
+        data_success
+    GROUP BY 
+        TO_CHAR(timestamp, 'YYYY-MM-DD')
+)
+SELECT 
+    COALESCE(e.date, s.date) AS date,
+    COALESCE(e.error_count, 0) AS error_count,
+    COALESCE(s.success_count, 0) AS success_count
+FROM 
+    errors_per_day e
+FULL OUTER JOIN 
+    success_per_day s
+ON 
+    e.date = s.date
+ORDER BY 
+    date;
