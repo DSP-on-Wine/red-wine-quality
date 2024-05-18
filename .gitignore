@@ -163,3 +163,7 @@ raw_data/
 good_data/
 bad_data/
 airflow/dags/ingestion_lock.txt
+output_data/
+# ./
+grafana-v10.4.2/ 
+bad_data/
