@@ -284,7 +284,7 @@ Before proceeding with the installation, ensure that you have the following prer
    After `--build` once, you can rerun the docker with simply entering into your terminal:
 
    ```bash
-   dockercompose up -d --build
+   dockercompose up -d
    ```
 
 5. **Make sure docker is enabled in the windows firewall.**
@@ -311,9 +311,8 @@ Before proceeding with the installation, ensure that you have the following prer
 
 This guide will help you set up grafana and connect it to `database in pgadmin tool` in a macOS
 
-This is the link for installation instructions in windows:
+For windows, refer to the installation guides [here](https://grafana.com/docs/grafana/latest/setup-grafana/installation/).
 
-https://grafana.com/docs/grafana/latest/setup-grafana/installation/
 
 #### Install Grafana on macOS using Homebrew:
 
@@ -328,11 +327,13 @@ brew services start grafana
 
 3. **To open Grafana, copy past this url in a browser:**
 
-http://localhost:3000/
+`http://localhost:3000/`
 
+Verify your authentication details:
+```ini
 username: admin
 Password: admin
-
+```
 you will be re-directed to create a new password
 
 4. **Configure your first data source:**
@@ -350,9 +351,7 @@ Database name: wine_quality
 
 #### Authentication:
 
-It's the same as in pgadmin:
-username: postgres
-password: dependes on what did you put when creating the server database of wine_quality
+Use the username and password you used to create the database in pgadmin.
 
 ==> Click and save ( You should have a pop up text saying connection ok)
 
@@ -360,26 +359,16 @@ password: dependes on what did you put when creating the server database of wine
 
 To start your new dashboard by adding a visualization:
 
-### Prerequisites:
+#### Usage
 
-Run the fastAPI server
-Run the Streamlit App
-Make sure you have values in the table in pgadmin
+1. Run the fastAPI server.
+2. Run your ariflow ingestion and prediction dags to recieve real time data.
+3. Make sure you have created some values in the table in pgadmin.
+   If you want make predictions manually, you can run the Streamlit app.
 
-Then you click on add visualization:
+You are now ready to create some visualizations! 
 
-1- Select a data source that you already created in the previous step
-2- Go to code and put your query: for our first test to create `Histogram of Predictions `
-
-```ini
-SELECT
-   prediction,
-   COUNT(*) as frequency
-FROM predictions
-WHERE timestamp >= NOW() - INTERVAL '1 day'
-GROUP BY prediction
-ORDER BY prediction;
-```
+You can refer to text files in the folder `grafana/queries` just to get you going. 
 
 ## Contributors
 
