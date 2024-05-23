@@ -12,12 +12,23 @@ import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from airflow.exceptions import AirflowSkipException
+from dotenv import load_dotenv
 
-RAW_DATA_DIR = '/opt/airflow/raw_data'
-GOOD_DATA_DIR = '/opt/airflow/good_data'
-BAD_DATA_DIR = '/opt/airflow/bad_data'
-TEMP_DATA_DIR = '/opt/airflow/temp_data'
-INGESTION_LOCK_FILE = 'dags/ingestion_lock.txt'
+load_dotenv()
+
+# Access the environment variables
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+DB_NAME = os.getenv('DB_NAME')
+VALIDATION_RESULT_URI = os.getenv('VALIDATION_RESULT_URI')
+TEAMS_WEBHOOK = os.getenv('TEAMS_WEBHOOK')
+
+RAW_DATA_DIR = os.getenv('RAW_DATA_DIR')
+GOOD_DATA_DIR = os.getenv('GOOD_DATA_DIR')
+BAD_DATA_DIR = os.getenv('BAD_DATA_DIR')
+INGESTION_LOCK_FILE = os.getenv('INGESTION_LOCK_FILE')
 
 # Define SQLAlchemy model
 Base = declarative_base()
@@ -47,10 +58,10 @@ class CorrectFormats(Base):
 
 
 @dag(
-        schedule_interval=timedelta(seconds=40),
+        schedule_interval=timedelta(seconds=90),
         start_date=datetime(2024, 5, 9),
         catchup=False,
-        tags=['data_ingestion']
+        tags=['data_ingestion', 'dsp']
 )
 def ingest_wine_data():
     @task
@@ -90,7 +101,7 @@ def ingest_wine_data():
 
                 # df = spark.read.csv(file_path, header=True)
                 dataframe_datasource = context.sources.add_or_update_pandas(
-                    name="my_pandas_data_validation",  # Changed for more descriptive name
+                    name="my_pandas_data_validation",  
                 )
                 df = pd.read_csv(file_path)
                 dataframe_asset = dataframe_datasource.add_dataframe_asset(
@@ -420,7 +431,6 @@ def ingest_wine_data():
     @task
     def send_alerts(validation_result):
         if validation_result:
-            validation_result_url = "file:///C:/Users/bemne/OneDrive/Desktop/red-wine-quality/airflow/great_expectations/uncommitted/data_docs/local_site/index.html#"
             file_path = validation_result['file_path']
             file_name = os.path.basename(file_path).split('.')[0]
             if validation_result['to_split'] == 1:
@@ -431,7 +441,6 @@ def ingest_wine_data():
                 logging.info(f'Filename kept as {file_name}')
             file_path = f'{BAD_DATA_DIR}/{file_name}'
             logging.info(f'Resulting file path is in: {file_path}')
-            print(validation_result_url)
             content = ""
             if validation_result['data_issues']:
                 timestamp = validation_result.get('timestamp', datetime.now())
@@ -464,14 +473,13 @@ def ingest_wine_data():
                     "name": "Link to the data docs",
                     "targets": [{
                         "os": "default",
-                        "uri": validation_result_url
+                        "uri": VALIDATION_RESULT_URI
                     }]
                 }]
             }
 
             print("Validation result found: ", content, message)
-            teams_webhook_url = "https://epitafr.webhook.office.com/webhookb2/ba2cf95d-f0a7-4e10-9b19-0ad9cd217951@3534b3d7-316c-4bc9-9ede-605c860f49d2/IncomingWebhook/21549bbb63eb497eb1540e9abb46a674/721cb538-78e6-4e41-9f05-013bbc2d426d"
-            response = requests.post(teams_webhook_url, json=message)
+            response = requests.post(TEAMS_WEBHOOK, json=message)
 
             if response.status_code == 200:
                 logging.info("Alert sent successfully to Microsoft Teams.")
@@ -487,7 +495,7 @@ def ingest_wine_data():
         if data_issues:
 
             try:
-                engine = db.create_engine('postgresql://postgres:postgres@host.docker.internal:5432/wine_quality')
+                engine = db.create_engine(f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
                 Session = sessionmaker(bind=engine)
                 data_errors, data_success = extract_values(validation_results)
                 session = Session()

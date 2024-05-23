@@ -10,29 +10,23 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from airflow.exceptions import AirflowSkipException
 
-# TODO:
-# see how to read DB info from .env file
-# try to make it select multiple files at once
+# Database connection
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+DB_NAME = os.getenv('DB_NAME')
 
-
-GOOD_DATA_DIR = '/opt/airflow/good_data'
+GOOD_DATA_DIR = os.getenv('GOOD_DATA_DIR')
 
 # Define SQLAlchemy model
 Base = declarative_base()
-
 
 class OldFile(Base):
     __tablename__ = 'old_files'
 
     filename = Column(String, primary_key=True)
 
-
-# Database connection
-DB_USER = 'postgres'
-DB_PASSWORD = 'postgres'
-DB_HOST = 'host.docker.internal'
-DB_PORT = '5432'
-DB_NAME = 'wine_quality'
 
 engine = create_engine(
     f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
@@ -58,7 +52,7 @@ class InputData(BaseModel):
         schedule_interval=timedelta(seconds=30),
         start_date=datetime(2024, 5, 18),
         catchup=False,
-        tags=['data_ingestion']
+        tags=['prediction', 'dsp']
         )
 def wine_prediction_dag():
 
